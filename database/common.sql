@@ -9,6 +9,12 @@ group by source
 having count(*)>100
 order by 2 desc 
 
+/* popular addresses with known names */
+select known(source), count(*) from transfers 
+group by source 
+having count(*)>100
+order by 2 desc 
+
 /* where did X tokens went to? (one level) */ 
 select * from transfers
 where source in (
@@ -77,7 +83,7 @@ group by source) most_recent
 /* addresses who delegated by transfar ***AFTER*** delegating by delegate */
 select * from (
 select t.source, get_stake(t.source), t.recipient trnfD, d.recipient deleD, max(t.block) tb, max(d.block) db from transfers t 
-left outer join delegates d on t.source = d.source 
+left join delegates d on t.source = d.source 
 where t.amount = 70000000000000000
 and t.source in (select source from delegates where id in (
 select id from 
@@ -88,6 +94,36 @@ group by t.source) z
 where tb > db
 /* add the below to get invalid states - where the transfer and delegate addresses are different */
 and trnfD != deleD
+
+/* get the delegated values for each address (computed stake) */
+select known(recipient), delegated_stake, own_stake, (delegated_stake+own_stake) total_stake from (
+select recipient, sum(stake) delegated_stake, get_stake(recipient) own_stake from
+-- select the transfers (most recent)
+(select source, recipient, get_stake(source) stake from transfers t where id in (
+select id from 
+(select id, source, max(block) from transfers
+where amount = 70000000000000000
+group by source) most_recent_t_id
+) 
+-- exclude transfers from people who delegate by delegate
+and source not in (select source from delegates where id in (
+select id from 
+(select id, source, max(block) from delegates
+group by source) most_recent
+) 
+)
+-- merge with the delegate data
+union all 
+select source, recipient, get_stake(source) stake from delegates where id in (
+select id from 
+(select id, source, max(block) from delegates
+group by source) most_recent
+) 
+) all_delegations
+-- group by delegated targets, sum stake of source (comes from sub-selects)
+group by recipient) agg
+order by total_stake desc
+
 
 
 
@@ -111,3 +147,12 @@ FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (source,recipient,transactionIndex,transactionHash,block,blockTime)
+
+/* load data - known addresses */
+LOAD DATA FROM S3 's3://import-rds/known-addresses-20190502.csv'
+INTO TABLE known_addresses
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(address,name,tde_funds,region)
+

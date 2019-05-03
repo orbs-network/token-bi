@@ -26,6 +26,13 @@ CREATE TABLE delegates (
 )
 
 create table known_addresses(
-	ID INT NOT NULL
-
+	ID INT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	name VARCHAR(100) NOT NULL,
+	tde_funds DECIMAL(29,0) NOT NULL,
+	region VARCHAR(50) NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+    KEY `ix_name` (`name`),
+    KEY `ix_region` (`region`)
 )
