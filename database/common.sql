@@ -44,12 +44,27 @@ select * from transfers
 where amount = 70000000000000000
 
 /* delegate by transfer - actual/most recent per delegator */
-select * from transfers where id in (
-select id from 
-(select id, source, max(block) from transfers
-where amount = 70000000000000000
-group by source) most_recent
-) order by block
+SELECT a.*
+FROM transfers a
+INNER JOIN (
+	SELECT source, MAX(block) block
+	FROM transfers
+	WHERE amount = 70000000000000000
+	GROUP BY source
+) b ON a.source = b.source AND a.block = b.block
+WHERE (a.source,transactionIndex) IN (
+	SELECT source, max(transactionIndex) FROM (
+		SELECT aa.source, aa.transactionIndex
+		FROM transfers aa
+		INNER JOIN (
+			SELECT source, MAX(block) block
+			FROM transfers
+			WHERE amount = 70000000000000000
+			GROUP BY source
+		) bb ON aa.source = bb.source AND aa.block = bb.block
+		)txIdxOrder
+	group by source)
+
 
 /* most delegated to */
 select recipient, count(*) from transfers
@@ -65,64 +80,206 @@ having count(*) > 1
 order by 2 desc
 
 /* delegate by delegate, most recent */
-select * from delegates where id in (
-select id from 
-(select id, source, max(block) from delegates
-group by source) most_recent
-) order by block
+SELECT a.*
+FROM delegates a
+INNER JOIN (
+	SELECT source, MAX(block) block
+	FROM delegates
+	GROUP BY source
+) b ON a.source = b.source AND a.block = b.block
+WHERE (a.source,transactionindex) IN (
+	SELECT source, max(transactionIndex) FROM (
+		SELECT aa.source, aa.transactionIndex
+		FROM delegates aa
+		INNER JOIN (
+			SELECT source, MAX(block) block
+			FROM delegates
+			GROUP BY source
+		) bb ON aa.source = bb.source AND aa.block = bb.block
+		)txIdxOrder
+	group by source)
 
 /* delegated by both transfer and delegate */
-select * from transfers
-where amount = 70000000000000000
-and source in (select source from delegates where id in (
-select id from 
-(select id, source, max(block) from delegates
-group by source) most_recent
-) order by block)
+SELECT * FROM transfers
+WHERE amount = 70000000000000000
+AND source IN (SELECT source FROM delegates)
+GROUP BY source
 
 /* addresses who delegated by transfar ***AFTER*** delegating by delegate */
-select * from (
-select t.source, get_stake(t.source), t.recipient trnfD, d.recipient deleD, max(t.block) tb, max(d.block) db from transfers t 
-left join delegates d on t.source = d.source 
-where t.amount = 70000000000000000
-and t.source in (select source from delegates where id in (
-select id from 
-(select id, source, max(block) from delegates
-group by source) most_recent
-) order by block) 
-group by t.source) z
-where tb > db
+SELECT * FROM
+    (SELECT 
+        t.source,
+		GET_STAKE(t.source) stake,
+		t.recipient trnfD,
+		d.recipient deleD,
+		MAX(t.block) tb,
+		MAX(d.block) db
+    FROM transfers t
+    LEFT JOIN delegates d ON t.source = d.source
+    WHERE t.amount = 70000000000000000
+	AND t.source IN 
+		(SELECT source FROM delegates
+		WHERE id IN 
+			(SELECT a.id
+				FROM delegates a
+				INNER JOIN (
+					SELECT source, MAX(block) block
+					FROM delegates
+					GROUP BY source
+				) b ON a.source = b.source AND a.block = b.block
+				WHERE (a.source,transactionindex) IN (
+					SELECT source, max(transactionIndex) FROM (
+						SELECT aa.source, aa.transactionIndex
+						FROM delegates aa
+						INNER JOIN (
+							SELECT source, MAX(block) block
+							FROM delegates
+							GROUP BY source
+						) bb ON aa.source = bb.source AND aa.block = bb.block
+						)txIdxOrder
+					GROUP BY source)
+				) 
+			)
+	GROUP BY t.source) z
+WHERE tb > db 
 /* add the below to get invalid states - where the transfer and delegate addresses are different */
-and trnfD != deleD
+AND trnfD != deleD
 
-/* get the delegated values for each address (computed stake) */
-select known(recipient), delegated_stake, own_stake, (delegated_stake+own_stake) total_stake from (
-select recipient, sum(stake) delegated_stake, get_stake(recipient) own_stake from
--- select the transfers (most recent)
-(select source, recipient, get_stake(source) stake from transfers t where id in (
-select id from 
-(select id, source, max(block) from transfers
-where amount = 70000000000000000
-group by source) most_recent_t_id
-) 
--- exclude transfers from people who delegate by delegate
-and source not in (select source from delegates where id in (
-select id from 
-(select id, source, max(block) from delegates
-group by source) most_recent
-) 
-)
--- merge with the delegate data
-union all 
-select source, recipient, get_stake(source) stake from delegates where id in (
-select id from 
-(select id, source, max(block) from delegates
-group by source) most_recent
-) 
-) all_delegations
--- group by delegated targets, sum stake of source (comes from sub-selects)
-group by recipient) agg
-order by total_stake desc
+/* get the delegated values for each address (computed stake) - two stored prodecedures exists that does that 'at-block' 
+   
+   get_known_delegated_stake(123) (translate names)
+   get_delegated_stake(123) (return addresses)
+*/
+-- outer select for total stake
+SELECT 
+    KNOWN(recipient),
+    delegated_stake,
+    own_stake,
+    (delegated_stake + own_stake) total_stake
+-- most recent transfers, without delegate
+FROM (SELECT 
+        recipient,
+		SUM(stake) delegated_stake,
+		GET_STAKE(recipient) own_stake
+    FROM (SELECT 
+			source,
+            recipient,
+            GET_STAKE(source) stake,
+            block,
+            'transfer' type
+    FROM transfers t
+    WHERE id IN (SELECT id FROM 
+		(SELECT a.* FROM transfers a
+		INNER JOIN (SELECT 
+			source, MAX(block) block
+			FROM transfers
+			WHERE amount = 70000000000000000
+			GROUP BY source) b ON a.source = b.source
+			AND a.block = b.block) trnsfr_most_recent_transfers
+		-- pick highest txnId in block if multiple txn in same block
+		WHERE (source , transactionindex) IN (SELECT 
+			source, MAX(transactionindex)
+			FROM (SELECT a.*
+				FROM transfers a
+				INNER JOIN (SELECT 
+					source, MAX(block) block
+					FROM transfers
+					WHERE amount = 70000000000000000
+					GROUP BY source) b ON a.source = b.source
+					AND a.block = b.block) trnsfr_same_most_recent_transfers
+				GROUP BY source)
+			)
+            -- exculde transfers of people who delegate by delegate
+            AND source NOT IN (SELECT source FROM delegates) 
+	UNION ALL 
+    -- merge with delegate by delegate
+		SELECT 
+			source,
+			recipient,
+			GET_STAKE(source) stake,
+			block,
+			'delegate' type
+		FROM delegates
+		WHERE id IN (SELECT 
+			id
+			FROM (SELECT a.* FROM delegates a
+			INNER JOIN (SELECT 
+				id, source, MAX(block) block FROM delegates
+				GROUP BY source) b ON a.source = b.source
+				AND a.block = b.block) dlgt_most_recent
+			-- pick highest txnId in block if multiple txn in same block
+			WHERE (source , transactionindex) IN (SELECT 
+				source, MAX(transactionindex)
+				FROM (SELECT a.* FROM delegates a
+					INNER JOIN (SELECT 
+						source, MAX(block) block
+						FROM delegates
+						GROUP BY source) b ON a.source = b.source
+						AND a.block = b.block) zz
+					GROUP BY source))) dlgt_same_most_recent
+		GROUP BY recipient) agg
+ORDER BY total_stake DESC
+
+
+/* get raw delegation rows used to calculate the delegation state in the above / stored procedures. with block limit */
+select source, stake, recipient, type, block from (
+select source, recipient, get_stake_at_block(source, 7648900) stake, block, "transfer" type from transfers t 
+where id in (
+SELECT id FROM 
+		(SELECT a.* FROM transfers a
+		INNER JOIN (SELECT 
+			source, MAX(block) block
+			FROM transfers
+			WHERE amount = 70000000000000000
+            and block <= 7648900
+			GROUP BY source) b ON a.source = b.source
+			AND a.block = b.block) trnsfr_most_recent_transfers
+		-- pick highest txnId in block if multiple txn in same block
+		WHERE (source , transactionindex) IN (SELECT 
+			source, MAX(transactionindex)
+			FROM (SELECT a.*
+				FROM transfers a
+				INNER JOIN (SELECT 
+					source, MAX(block) block
+					FROM transfers
+					WHERE amount = 70000000000000000
+                    and block <= 7648900
+					GROUP BY source) b ON a.source = b.source
+					AND a.block = b.block) trnsfr_same_most_recent_transfers
+				GROUP BY source)
+			)
+            -- exculde transfers of people who delegate by delegate
+            AND source NOT IN (SELECT source FROM delegates) 
+	UNION ALL 
+    -- merge with delegate by delegate
+		SELECT 
+			source,
+			recipient,
+			GET_STAKE_AT_BLOCK(source, 7648900) stake,
+			block,
+			'delegate' type
+		FROM delegates
+		WHERE id IN (SELECT 
+			id
+			FROM (SELECT a.* FROM delegates a
+			INNER JOIN (SELECT 
+				id, source, MAX(block) block FROM delegates
+				GROUP BY source) b ON a.source = b.source
+				AND a.block = b.block) dlgt_most_recent
+			-- pick highest txnId in block if multiple txn in same block
+			WHERE (source , transactionindex) IN (SELECT 
+				source, MAX(transactionindex)
+				FROM (SELECT a.* FROM delegates a
+					INNER JOIN (SELECT 
+						source, MAX(block) block
+						FROM delegates
+                        where block <= 7648900
+						GROUP BY source) b ON a.source = b.source
+						AND a.block = b.block) zz
+					GROUP BY source))
+                    ) dlgt_same_most_recent
+-- where dlgt_same_most_recent.recipient = "0xf7ae622c77d0580f02bcb2f92380d61e3f6e466c" -- optional, limit by delegate target
+order by dlgt_same_most_recent.block
 
 
 
