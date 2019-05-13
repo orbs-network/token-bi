@@ -282,6 +282,8 @@ SELECT id FROM
 order by dlgt_same_most_recent.block
 
 
+/* use the delegations view (can later continue aggregating the results) */
+select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 
 
 /* time format */
