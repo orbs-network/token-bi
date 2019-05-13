@@ -1,6 +1,5 @@
-
 USE `orbs_token`;
-DROP procedure IF EXISTS `orbs_token`.`get_known_delegated_stake`;
+DROP procedure IF EXISTS `get_known_delegated_stake`;
 
 DELIMITER $$
 USE `orbs_token`$$
@@ -9,6 +8,7 @@ BEGIN
 -- outer select for total stake
 SELECT 
     KNOWN(recipient),
+    recipient
     delegated_stake,
     own_stake,
     (delegated_stake + own_stake) total_stake
@@ -24,7 +24,9 @@ FROM (SELECT
             block,
             'transfer' type
     FROM transfers t
-    WHERE id IN (SELECT id FROM 
+    WHERE 
+    source != recipient
+    AND id IN (SELECT id FROM 
 		(SELECT a.* FROM transfers a
 		INNER JOIN (SELECT 
 			source, MAX(block) block
@@ -81,4 +83,4 @@ ORDER BY total_stake DESC;
 END$$
 
 DELIMITER ;
-;
+
