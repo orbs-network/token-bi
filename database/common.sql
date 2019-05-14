@@ -290,7 +290,7 @@ select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 select 
 	SUM(get_stake_at_block(source, 7662975)), -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
 	region, 
-	count(source) [number of players]
+	count(source) "number of addresses"
 from (
 	select source, known(source), known_from(source), get_region(source) region from (
 		select source from transfers 
