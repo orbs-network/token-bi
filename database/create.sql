@@ -36,3 +36,14 @@ create table known_addresses(
     KEY `ix_name` (`name`),
     KEY `ix_region` (`region`)
 )
+
+create table address_context(
+	ID INT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	known VARCHAR(100),
+	known_from VARCHAR(100),
+	region VARCHAR(50),
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+	KEY `ix_region` (`region`)
+)

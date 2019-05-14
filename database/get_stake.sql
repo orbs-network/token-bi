@@ -7,22 +7,25 @@ CREATE DEFINER=`orbs`@`%` FUNCTION `get_stake`(address CHAR(42)) RETURNS decimal
 BEGIN
 DECLARE stake DECIMAL(29,0) DEFAULT 0;
 
-SELECT 
-    r.received - s.sent
-INTO stake FROM
-    (SELECT 
-        COALESCE(SUM(amount), 0) sent
-    FROM
-        transfers
-    WHERE
-        source = address) s,
-    (SELECT 
-        COALESCE(SUM(amount), 0) received
-    FROM
-        transfers
-    WHERE
-        recipient = address) r;
-
+IF address = "0x0000000000000000000000000000000000000000" THEN
+    SELECT 0 INTO stake;
+ELSE
+    SELECT 
+        r.received - s.sent
+    INTO stake FROM
+        (SELECT 
+            COALESCE(SUM(amount), 0) sent
+        FROM
+            transfers
+        WHERE
+            source = address) s,
+        (SELECT 
+            COALESCE(SUM(amount), 0) received
+        FROM
+            transfers
+        WHERE
+            recipient = address) r;
+END IF;
 RETURN stake;
 END$$
 
