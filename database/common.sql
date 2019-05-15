@@ -288,18 +288,22 @@ select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 
 /* create a region pivoted view of stake holding */
 select 
-	SUM(get_stake_at_block(source, 7662975)), -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
-	region, 
+	SUM(get_stake_at_block(source, 7662975)) / 1000000000000000000, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
+	SUM(get_stake_if_delegated_at_block(source, 7662975)) / 1000000000000000000 -- if did not stake, returns zero (for summation)
+    region, 
 	count(source) "number of addresses"
 from (
-	select source, known(source), known_from(source), get_region(source) region from (
+	select source, 
+    known(source), 
+    known_from(source), 
+    get_region(source) region 
+    from (
 		select source from transfers 
 		union -- union will also run distinct for us
 		select recipient from transfers
 		)all_unique_addresses
 	)formatted_region_data
 group by region
-
 
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
