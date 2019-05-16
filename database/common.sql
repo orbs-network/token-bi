@@ -285,11 +285,11 @@ order by dlgt_same_most_recent.block
 /* use the delegations view (can later continue aggregating the results) */
 select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 
-
 /* create a region pivoted view of stake holding */
+set @blockNum := 7662975;
 select 
-	SUM(get_stake_at_block(source, 7662975)) / 1000000000000000000, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
-	SUM(get_stake_if_delegated_at_block(source, 7662975)) / 1000000000000000000 -- if did not stake, returns zero (for summation)
+	SUM(get_stake_at_block(source, @blockNum)) / 1000000000000000000, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
+	SUM(get_stake_if_delegated_at_block(source, @blockNum)) / 1000000000000000000, -- if did not stake, returns zero (for summation)
     region, 
 	count(source) "number of addresses"
 from (
@@ -304,6 +304,15 @@ from (
 		)all_unique_addresses
 	)formatted_region_data
 group by region
+
+/* transactions and volume by day */
+SELECT 
+    FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') date_time,
+    COUNT(*) transaction_count,
+    SUM(amount) / 1000000000000000000 volume
+FROM
+    transfers
+GROUP BY blocktime DIV 86400
 
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
