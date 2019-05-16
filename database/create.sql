@@ -10,6 +10,7 @@ CREATE TABLE transfers (
 	PRIMARY KEY (id),
 	KEY `ix_source` (`source`),
     KEY `ix_recipient` (`recipient`)
+    KEY `ix_amount_source` (`amount`,`source`)
 )
 
 CREATE TABLE delegates (
@@ -37,13 +38,26 @@ create table known_addresses(
     KEY `ix_region` (`region`)
 )
 
-create table address_context(
-	ID INT NOT NULL AUTO_INCREMENT,
+create table guardians_register(
+	id BIGINT NOT NULL AUTO_INCREMENT,
 	address CHAR(42) NOT NULL,
-	known VARCHAR(100),
-	known_from VARCHAR(100),
-	region VARCHAR(50),
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
 	KEY `ix_address` (`address`),
-	KEY `ix_region` (`region`)
+	KEY `ix_block` (`block`)
+)
+
+create table guardians_leave(
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+	KEY `ix_block` (`block`)
 )

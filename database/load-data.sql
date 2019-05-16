@@ -22,3 +22,20 @@ FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (address,name,tde_funds,region)
+
+/* load data - guardians register events */
+LOAD DATA FROM S3 's3://import-rds/guardian_register.csv'
+INTO TABLE guardians_register
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(address,transactionIndex,transactionHash,block,blockTime)
+
+/* load data - guardians leave events */
+LOAD DATA FROM S3 's3://import-rds/guardian_leave.csv'
+INTO TABLE guardians_leave
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(address,transactionIndex,transactionHash,block,blockTime)
+

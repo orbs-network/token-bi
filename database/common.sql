@@ -314,6 +314,25 @@ FROM
     transfers
 GROUP BY blocktime DIV 86400
 
+/* top 100 holders */
+-- if this becomes slow, do the aggregation on distinct in each side (source/recipient) and then union
+SELECT 
+    GET_STAKE_AT_BLOCK(source, 7668900) stake,
+    KNOWN(source) name,
+    source
+FROM
+    (SELECT source FROM transfers 
+    UNION 
+    SELECT recipient FROM transfers) all_unique_addresses
+WHERE KNOWN(source) NOT LIKE '%orbs wallet%'
+AND KNOWN(source) NOT LIKE '%exchange%'
+GROUP BY source
+ORDER BY stake DESC
+LIMIT 100
+
+
+
+
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
 
