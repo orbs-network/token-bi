@@ -6,7 +6,8 @@ SELECT
     recipient,
     delegated_stake,
     own_stake,
-    (delegated_stake + own_stake) total_stake
+    (delegated_stake + own_stake) total_stake,
+    IS_GUARDIAN_AT_BLOCK(recipient, blockNumber()) is_guardian
 -- most recent transfers, without delegate
 FROM (SELECT 
         recipient,
