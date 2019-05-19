@@ -3,7 +3,7 @@ CREATE FUNCTION blockNumber() RETURNS INTEGER DETERMINISTIC NO SQL RETURN @block
 CREATE VIEW delegations_at_block as
 SELECT 
     KNOWN(recipient),
-    recipient
+    recipient,
     delegated_stake,
     own_stake,
     (delegated_stake + own_stake) total_stake

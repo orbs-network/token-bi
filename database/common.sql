@@ -330,6 +330,27 @@ GROUP BY source
 ORDER BY stake DESC
 LIMIT 100
 
+/* top 100 holders **who delegated** */
+SELECT 
+    GET_STAKE_AT_BLOCK(source, 7668900) stake,
+    KNOWN(source) name,
+    source
+FROM
+    (SELECT source FROM transfers 
+    UNION 
+    SELECT recipient FROM transfers) all_unique_addresses
+WHERE KNOWN(source) NOT LIKE '%orbs wallet%'
+AND KNOWN(source) NOT LIKE '%exchange%'
+AND source IN (
+	SELECT source FROM delegates
+	union
+	SELECT source FROM transfers
+	WHERE amount = 70000000000000000
+)
+GROUP BY source
+ORDER BY stake DESC
+LIMIT 100
+
 
 
 
