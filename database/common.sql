@@ -288,10 +288,10 @@ select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 /* create a region pivoted view of stake holding */
 set @blockNum := 7662975;
 select 
-	SUM(get_stake_at_block(source, @blockNum)) / 1000000000000000000, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
-	SUM(get_stake_if_delegated_at_block(source, @blockNum)) / 1000000000000000000, -- if did not stake, returns zero (for summation)
+	SUM(get_stake_at_block(source, @blockNum)) / 1000000000000000000 as total_stake, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
+	SUM(get_stake_if_delegated_at_block(source, @blockNum)) / 1000000000000000000 as delegated_stake, -- if did not stake, returns zero (for summation)
     region, 
-	count(source) "number of addresses"
+	count(source) as "number of addresses"
 from (
 	select source, 
     known(source), 
