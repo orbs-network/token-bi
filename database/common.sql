@@ -347,23 +347,22 @@ FROM
 WHERE
     KNOWN(source) NOT LIKE '%orbs wallet%'
         AND KNOWN(source) NOT LIKE '%exchange%'
-        AND (
-			-- delegated
-            source IN (SELECT 
-				source
-			FROM
-				delegates UNION SELECT 
-				source
-			FROM
-				transfers
-			WHERE
-				amount = 70000000000000000)
-			OR 
-            -- or guardian
-            source IN (SELECT 
-				address
-			FROM
-				computed_guardians_at_block))
+        AND (source IN (SELECT 
+            source
+        FROM
+            delegates
+        WHERE
+            block <= @blocknumber UNION SELECT 
+            source
+        FROM
+            transfers
+        WHERE
+            amount = 70000000000000000
+                AND block <= @blocknumber)
+        OR source IN (SELECT 
+            address
+        FROM
+            computed_guardians_at_block))
 GROUP BY source
 ORDER BY stake DESC
 LIMIT 100
