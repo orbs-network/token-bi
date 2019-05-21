@@ -89,6 +89,8 @@ FROM
                 id, source, MAX(block) block
             FROM
                 delegates
+            WHERE
+                block <= BLOCKNUMBER()
             GROUP BY source) b ON a.source = b.source
                 AND a.block = b.block) dlgt_most_recent
             WHERE
