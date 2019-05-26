@@ -3,17 +3,31 @@ DROP function IF EXISTS `is_guardian_at_block`;
 
 DELIMITER $$
 USE `orbs_token`$$
-CREATE FUNCTION `is_guardian_at_block` (address_to_check CHAR(42), blockNumber BIGINT) RETURNS BOOL
+CREATE DEFINER=`orbs`@`%` FUNCTION `is_guardian_at_block`(address_to_check CHAR(42), blockNumber BIGINT) RETURNS tinyint(1)
 BEGIN
 DECLARE address_found CHAR(42) DEFAULT "";
+DECLARE guardian_address CHAR(42) DEFAULT "";
 SET @blocknumber := blockNumber;
 
+-- prequery as the view is very slow
 SELECT 
     address
-INTO address_found FROM
-    computed_guardians_at_block
+INTO guardian_address FROM
+    guardians_register
 WHERE
-    address = address_to_check;
+    address = address_to_check
+        AND block <= blockNumber;
+	
+-- this address may be a guardian, check for the specific block
+IF guardian_address = address_to_check THEN
+	SET @blockNumber := blockNumber;
+	SELECT 
+		address
+	INTO address_found FROM
+		computed_guardians_at_block
+	WHERE
+		address = address_to_check;
+END IF;
 
 IF address_found = address_to_check THEN
 	RETURN 1;

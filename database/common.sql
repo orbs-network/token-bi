@@ -367,6 +367,24 @@ GROUP BY source
 ORDER BY stake DESC
 LIMIT 100
 
+/* andrey's table */
+set @blocknumber := 7777677;
+select 
+    source as address, 
+	known(source) as known_name, 
+	get_region(source) as region,
+    known_from(source) as transfer_from,
+    get_stake_at_block(source, @blocknumber) as stake,
+    is_delegating_at_block(source, @blocknumber) as delegating,
+    is_guardian_at_block(source, @blocknumber) as guardian 
+
+    from (
+		select source from transfers 
+		union -- union will also run distinct for us
+		select recipient from transfers
+		)all_unique_addresses
+
+    
 
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
