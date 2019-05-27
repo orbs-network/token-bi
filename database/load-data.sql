@@ -39,3 +39,10 @@ LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (address,transactionIndex,transactionHash,block,blockTime)
 
+/* load data - voting data */
+LOAD DATA FROM S3 's3://import-rds/votes-7828900.csv'
+INTO TABLE guardians_votes
+FIELDS TERMINATED BY ';'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(counter,address,validators,transactionIndex,transactionHash,block,blockTime)

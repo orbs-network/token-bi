@@ -384,7 +384,15 @@ select
 		select recipient from transfers
 		)all_unique_addresses
 
-    
+
+/* get the guardians who votes with their stake */
+select d.known_name, d.address, d.total_stake from (select @blockNumber:=7528900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+
 
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers

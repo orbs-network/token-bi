@@ -61,3 +61,16 @@ create table guardians_leave(
 	KEY `ix_address` (`address`),
 	KEY `ix_block` (`block`)
 )
+
+CREATE TABLE guardians_votes(
+	counter BIGINT NOT NULL,
+	address CHAR(42) NOT NULL,
+	validators VARCHAR(250) NOT NULL, -- will be a json array stringified string of the votes, so [] if empty, max vote count is 3, or 126 characters
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (counter),
+	KEY `ix_address` (`address`),
+	KEY `ix_block` (`block`)
+)

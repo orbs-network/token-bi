@@ -7,12 +7,14 @@ let ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca3
 let erc20ContractAddress = "0xff56Cc6b1E6dEd347aA0B7676C85AB0B3D08B0FA"; //token contract
 let votingContractAddress = "0x30f855afb78758Aa4C2dc706fb0fA3A98c865d2d"; //voting
 let guardiansContractAddress = "0xD64B1BF6fCAb5ADD75041C89F61816c2B3d5E711"; //guardians - not used yet
-let startBlock = "7748901";//transactions start at 7437000; //contract created at 5710114 
-let endBlock = "7795000"; // last elections as of now.. first election at 7528900
-let interval = 10000;
-let doTransfers = true;
-let doDelegates = true;
-let doGuardians = true;
+let startBlock = "7437000";//transactions start at 7437000; //contract created at 5710114 
+let endBlock = "7828900"; // last elections as of now.. first election at 7528900
+let interval = 100000;
+let doTransfers = false;
+let doDelegates = false;
+let doGuardians = false;
+let doVotes = true;
+let voteout_filename = "votes.csv";
 let transfers_filename = "transfers.csv"; 
 let delegate_filename = "delegates.csv";
 let guardian_register_filename = "guardian_register.csv"
@@ -26,8 +28,10 @@ const DELEGATES_HEADER = "From,To,txnIndex,txnHash,Block,UnixDate";
 const GUARDIANS_HEADER = "Address,txnIndex,txnHash,Block,UnixDate";
 const TRANSFER_EVENT_NAME = "Transfer";
 const DELEGATE_EVENT_NAME = "Delegate";
-const GUARDIAN_REGISTER_EVENT_NAME = "GuardianRegistered"
-const GUARDIAN_LEAVE_EVENT_NAME = "GuardianLeft"
+const GUARDIAN_REGISTER_EVENT_NAME = "GuardianRegistered";
+const GUARDIAN_LEAVE_EVENT_NAME = "GuardianLeft";
+const VOTEOUT_EVENT_NAME = "VoteOut";
+const VOTEOUT_HEADER = "Counter,Address,Validators,txnIndex,txnHash,Block,UnixDate";
 
 
 function validateInput() {
@@ -71,16 +75,10 @@ function getToAddressAddressFromEvent(event) {
     return "NA";
 }
 
-function generateRowObject(amount,block, transactionIndex, txHash, transferFrom, transferTo, method,unix_date,human_date) {
-    if (withHumanDate) {
-        return {
-            amount, block, transactionIndex, txHash, transferFrom, transferTo, method,unix_date,human_date
-        }    
-    } else {
-        return {
-            amount, block, transactionIndex, txHash, transferFrom, transferTo, method,unix_date
-        } 
-    }
+function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData) {
+    return {
+        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData
+    }    
 }
 
 async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
@@ -129,10 +127,26 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
             let human_date = jsDate.toUTCString();
             human_date = human_date.slice(0, 3) + human_date.slice(4);
             let amount = 0;
+            let logData = [];
             if (event.raw.data != null) { // no data for guardians event
-                amount = web3.utils.toBN(event.raw.data)
+                if (event.event === "VoteOut") {
+                    logData = web3.eth.abi.decodeLog([{
+                        type: 'address',
+                        name: 'sender',
+                        indexed: true
+                    },{
+                        type: 'address[]',
+                        name: 'validators'
+                    },{
+                        type: 'uint256',
+                        name: 'counter'
+                    }], event.raw.data, event.raw.topics[1]);
+                    
+                } else {
+                    amount = web3.utils.toBN(event.raw.data);
+                }
             }
-            let obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, receipientAddress, event.event,unix_date,human_date);
+            let obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, receipientAddress, event.event, unix_date, human_date, logData);
             rows.push(obj);
             bar.tick()
         }
@@ -176,32 +190,37 @@ async function readAndMergeEvents(web3, contract, startBlock, endBlock, eventNam
     return events;
 }
 
-function getHumanDateForRow(row) {
+function getHumanDateForRow(row, delim) {
     let humanDatePart = "";
     if (withHumanDate) {
-        humanDatePart = `,${row.human_date}`;
+        humanDatePart = `${delim}${row.human_date}`;
     }
     return humanDatePart;
 }
 
 function formatDelegate(row) {
-    let humanDatePart = getHumanDateForRow(row);
+    let humanDatePart = getHumanDateForRow(row, ",");
     return `${row.transferFrom},${row.transferTo},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
 }
 
 function formatTransfer(row) {
-    let humanDatePart = getHumanDateForRow(row);
+    let humanDatePart = getHumanDateForRow(row, ",");
     return `${row.transferFrom},${row.transferTo},${row.amount},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
 }
 
 function formatGuardian(row) {
-let humanDatePart = getHumanDateForRow(row);
+let humanDatePart = getHumanDateForRow(row, ",");
     return `${row.transferFrom},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;    
+}
+
+function formatVoteOut(row) {
+let humanDatePart = getHumanDateForRow(row, ";");
+    return `${row.logData.counter.toString(10)};${row.transferFrom};${JSON.stringify(row.logData.validators)};${row.transactionIndex};${row.txHash};${row.block};${row.unix_date}${humanDatePart}\n`;    
 }
 
 async function getEvents(web3, contract, eventName, csvHeader, appendFunc, outputFilename) {
     let eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventName, false);
-    console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} Delegate events`);
+    console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
 
     let csvStr = csvHeader + "\n";
     if (withHumanDate) {
@@ -234,6 +253,11 @@ async function main() {
         let guardianContract = await new web3.eth.Contract(GUARDIANS_ABI, guardiansContractAddress);
         await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, guardian_register_filename);
         await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, guardian_leave_filename);
+    }
+
+    if (doVotes) {
+        let votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
+        await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, voteout_filename);   
     }
 }
 
