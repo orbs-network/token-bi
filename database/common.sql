@@ -393,6 +393,142 @@ select gv.address from guardians_votes gv
 where block > blocknumber() - 45000 and block <= blocknumber()
 )
 
+/* get the guardians who voted with their voting power (without a window function) */
+select @all_stake := sum(total_stake) from (select @blockNumber:=7828900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+);
+select d.known_name, d.address, in_orbs(d.total_stake) as orbs_total_stake, d.total_stake / @all_stake as voting_power from (select @blockNumber:=7828900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+
+/* reward for top10 guardian */
+select @all_stake := sum(total_stake) from (select @blockNumber:=7828900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+);
+select d.known_name, 
+d.address, 
+in_orbs(d.total_stake) as orbs_total_stake, 
+d.total_stake / @all_stake as voting_power,
+in_orbs(d.total_stake * 0.00085) as reward
+from (select @blockNumber:=7828900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+order by d.total_stake desc
+limit 10
+
+/* get rewards for valid delegators */
+select @blockNumber:=7828900;
+SELECT 
+        source,
+            recipient,
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
+            block,
+            'transfer' type,
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.000682 as reward
+    FROM
+        transfers t
+    WHERE
+        source != recipient
+            AND id IN (SELECT 
+                id
+            FROM
+                (SELECT 
+                a.*
+            FROM
+                transfers a
+            INNER JOIN (SELECT 
+                source, MAX(block) block
+            FROM
+                transfers
+            WHERE
+                amount = 70000000000000000
+                    AND block <= BLOCKNUMBER()
+            GROUP BY source) b ON a.source = b.source
+                AND a.block = b.block) trnsfr_most_recent_transfers
+            WHERE
+                (source , transactionindex) IN (SELECT 
+                        source, MAX(transactionindex)
+                    FROM
+                        (SELECT 
+                        a.*
+                    FROM
+                        transfers a
+                    INNER JOIN (SELECT 
+                        source, MAX(block) block
+                    FROM
+                        transfers
+                    WHERE
+                        amount = 70000000000000000
+                            AND block <= BLOCKNUMBER()
+                    GROUP BY source) b ON a.source = b.source
+                        AND a.block = b.block) trnsfr_same_most_recent_transfers
+                    GROUP BY source))
+            AND source NOT IN (SELECT 
+                source
+            FROM
+                delegates)
+			AND recipient IN (select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+                UNION ALL SELECT 
+        source,
+            recipient,
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
+            block,
+            'delegate' type,
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.000682 as reward
+    FROM
+        delegates
+    WHERE
+        id IN (SELECT 
+                id
+            FROM
+                (SELECT 
+                a.*
+            FROM
+                delegates a
+            INNER JOIN (SELECT 
+                id, source, MAX(block) block
+            FROM
+                delegates
+            WHERE
+                block <= BLOCKNUMBER()
+            GROUP BY source) b ON a.source = b.source
+                AND a.block = b.block) dlgt_most_recent
+            WHERE
+                (source , transactionindex) IN (SELECT 
+                        source, MAX(transactionindex)
+                    FROM
+                        (SELECT 
+                        a.*
+                    FROM
+                        delegates a
+                    INNER JOIN (SELECT 
+                        source, MAX(block) block
+                    FROM
+                        delegates
+                    WHERE
+                        block <= BLOCKNUMBER()
+                    GROUP BY source) b ON a.source = b.source
+                        AND a.block = b.block) zz
+                    GROUP BY source))
+                    AND recipient IN (select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+
+
 
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
