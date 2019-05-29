@@ -74,3 +74,13 @@ CREATE TABLE guardians_votes(
 	KEY `ix_address` (`address`),
 	KEY `ix_block` (`block`)
 )
+
+CREATE TABLE validators(
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	addedAtBlock  BIGINT NOT NULL,
+	validUntilBlock BIGINT,
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+	KEY `ix_block` (`addedAtBlock`)
+)

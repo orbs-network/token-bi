@@ -408,17 +408,17 @@ where block > blocknumber() - 45000 and block <= blocknumber()
 )
 
 /* reward for top10 guardian */
+-- cap at 10% or 40M annual (per election)
 select @all_stake := sum(total_stake) from (select @blockNumber:=7828900) param, delegations_at_block d
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
 where block > blocknumber() - 45000 and block <= blocknumber()
 );
+select @top10_total_stake := sum(total_stake) from (
 select d.known_name, 
 d.address, 
-in_orbs(d.total_stake) as orbs_total_stake, 
-d.total_stake / @all_stake as voting_power,
-in_orbs(d.total_stake * 0.00085) as reward
+d.total_stake
 from (select @blockNumber:=7828900) param, delegations_at_block d
 where d.is_guardian = 1
 and d.address in (
@@ -426,9 +426,33 @@ select gv.address from guardians_votes gv
 where block > blocknumber() - 45000 and block <= blocknumber()
 )
 order by d.total_stake desc
-limit 10
+limit 10)top10;
+select @pool_size := guardian_reward_pool(blocknumber());
+select known_name, 
+address, 
+orbs_total_stake, 
+voting_power, 
+top10_power, 
+@pool_size * top10_power as reward
+from
+(select d.known_name, 
+d.address, 
+in_orbs(d.total_stake) as orbs_total_stake, 
+d.total_stake / @all_stake as voting_power,
+d.total_stake / @top10_total_stake as top10_power
+-- in_orbs(d.total_stake * 0.1 / 117.23) as reward -- uncomment this for control (direct calc without 40M cap)
+from (select @blockNumber:=7828900) param, delegations_at_block d
+where d.is_guardian = 1
+and d.address in (
+select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber()
+)
+order by d.total_stake desc
+limit 10)x;
 
 /* get rewards for valid delegators */
+-- delegates - get a list of guardians who voted, then get everyone who voted for them, show stake (no grouping), show reward
+-- reward is 0.08 / 117.23 => 0.000682 per election according to the stake at that election
 select @blockNumber:=7828900;
 SELECT 
         source,
@@ -528,6 +552,28 @@ where block > blocknumber() - 45000 and block <= blocknumber()
 where block > blocknumber() - 45000 and block <= blocknumber()
 )
 
+/* validators rewards */
+-- validator rewards - stake_at_block * (0.04 / 117.23) = 0.0003412... (not natural) + 1M/117.23 (8530.2396... not natural again)
+set @blocknumber := 7828900;
+SELECT
+name,
+address,
+in_orbs(stake),
+in_orbs(stake_reward),
+million_reward_in_orbs,
+in_orbs(stake_reward) + million_reward_in_orbs AS total_reward
+from(
+SELECT 
+    KNOWN(address) AS name,
+    address,
+    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS stake,
+    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.04 / 117.23 AS stake_reward,
+    1000000 / 117.23 AS million_reward_in_orbs
+FROM
+    validators
+WHERE
+    COALESCE(validUntilBlock, POW(2, 64) - 1) > BLOCKNUMBER()
+)x
 
 
 /* time format */
