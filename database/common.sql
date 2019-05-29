@@ -453,6 +453,7 @@ limit 10)x;
 /* get rewards for valid delegators */
 -- delegates - get a list of guardians who voted, then get everyone who voted for them, show stake (no grouping), show reward
 -- reward is 0.08 / 117.23 => 0.000682 per election according to the stake at that election
+
 select @blockNumber:=7828900;
 SELECT 
         source,
@@ -460,7 +461,7 @@ SELECT
             GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
             block,
             'transfer' type,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.000682 as reward
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / 117.23 as reward
     FROM
         transfers t
     WHERE
@@ -512,10 +513,11 @@ where block > blocknumber() - 45000 and block <= blocknumber()
             GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
             block,
             'delegate' type,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.000682 as reward
+            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / 117.23 as reward
     FROM
         delegates
     WHERE
+    source != recipient and
         id IN (SELECT 
                 id
             FROM
@@ -550,7 +552,16 @@ where block > blocknumber() - 45000 and block <= blocknumber()
                     GROUP BY source))
                     AND recipient IN (select gv.address from guardians_votes gv
 where block > blocknumber() - 45000 and block <= blocknumber()
-)
+) UNION ALL SELECT 
+        address,
+            address,
+            GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) stake,
+            block,
+            'guardian' type,
+            GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.08 / 117.23 as reward
+            from computed_guardians_at_block
+            where address IN (select gv.address from guardians_votes gv
+where block > blocknumber() - 45000 and block <= blocknumber())
 
 /* validators rewards */
 -- validator rewards - stake_at_block * (0.04 / 117.23) = 0.0003412... (not natural) + 1M/117.23 (8530.2396... not natural again)
