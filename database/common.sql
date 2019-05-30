@@ -390,7 +390,7 @@ select d.known_name, d.address, d.total_stake from (select @blockNumber:=7528900
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 )
 
 /* get the guardians who voted with their voting power (without a window function) */
@@ -398,13 +398,13 @@ select @all_stake := sum(total_stake) from (select @blockNumber:=7828900) param,
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 );
 select d.known_name, d.address, in_orbs(d.total_stake) as orbs_total_stake, d.total_stake / @all_stake as voting_power from (select @blockNumber:=7828900) param, delegations_at_block d
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 )
 
 /* reward for top10 guardian */
@@ -413,7 +413,7 @@ select @all_stake := sum(total_stake) from (select @blockNumber:=7828900) param,
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 );
 select @top10_total_stake := sum(total_stake) from (
 select d.known_name, 
@@ -423,7 +423,7 @@ from (select @blockNumber:=7828900) param, delegations_at_block d
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 )
 order by d.total_stake desc
 limit 10)top10;
@@ -445,7 +445,7 @@ from (select @blockNumber:=7828900) param, delegations_at_block d
 where d.is_guardian = 1
 and d.address in (
 select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
+where block >= blocknumber() - 45000 and block <= blocknumber()
 )
 order by d.total_stake desc
 limit 10)x;
@@ -453,23 +453,22 @@ limit 10)x;
 /* get rewards for valid delegators */
 -- delegates - get a list of guardians who voted, then get everyone who voted for them, show stake (no grouping), show reward
 -- reward is 0.08 / 117.23 => 0.000682 per election according to the stake at that election
-
 select @blockNumber:=7828900;
 SELECT 
-        source,
-            recipient,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
-            block,
-            'transfer' type,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / 117.23 as reward
-    FROM
-        transfers t
-    WHERE
-        source != recipient
-            AND id IN (SELECT 
-                id
-            FROM
-                (SELECT 
+    source,
+    recipient,
+    GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
+    block,
+    'transfer' type,
+    GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / NUMBER_OF_PERIODS() AS reward
+FROM
+    transfers t
+WHERE
+    source != recipient
+        AND id IN (SELECT 
+            id
+        FROM
+            (SELECT 
                 a.*
             FROM
                 transfers a
@@ -482,11 +481,11 @@ SELECT
                     AND block <= BLOCKNUMBER()
             GROUP BY source) b ON a.source = b.source
                 AND a.block = b.block) trnsfr_most_recent_transfers
-            WHERE
-                (source , transactionindex) IN (SELECT 
-                        source, MAX(transactionindex)
-                    FROM
-                        (SELECT 
+        WHERE
+            (source , transactionindex) IN (SELECT 
+                    source, MAX(transactionindex)
+                FROM
+                    (SELECT 
                         a.*
                     FROM
                         transfers a
@@ -499,29 +498,33 @@ SELECT
                             AND block <= BLOCKNUMBER()
                     GROUP BY source) b ON a.source = b.source
                         AND a.block = b.block) trnsfr_same_most_recent_transfers
-                    GROUP BY source))
-            AND source NOT IN (SELECT 
-                source
-            FROM
-                delegates)
-			AND recipient IN (select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
-)
-                UNION ALL SELECT 
-        source,
-            recipient,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
-            block,
-            'delegate' type,
-            GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / 117.23 as reward
-    FROM
-        delegates
-    WHERE
-    source != recipient and
-        id IN (SELECT 
-                id
-            FROM
-                (SELECT 
+                GROUP BY source))
+        AND source NOT IN (SELECT 
+            source
+        FROM
+            delegates)
+        AND recipient IN (SELECT 
+            gv.address
+        FROM
+            guardians_votes gv
+        WHERE
+            block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                AND block <= BLOCKNUMBER()) 
+UNION ALL SELECT 
+    source,
+    recipient,
+    GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
+    block,
+    'delegate' type,
+    GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) * 0.08 / NUMBER_OF_PERIODS() AS reward
+FROM
+    delegates
+WHERE
+    source != recipient
+        AND id IN (SELECT 
+            id
+        FROM
+            (SELECT 
                 a.*
             FROM
                 delegates a
@@ -533,11 +536,11 @@ where block > blocknumber() - 45000 and block <= blocknumber()
                 block <= BLOCKNUMBER()
             GROUP BY source) b ON a.source = b.source
                 AND a.block = b.block) dlgt_most_recent
-            WHERE
-                (source , transactionindex) IN (SELECT 
-                        source, MAX(transactionindex)
-                    FROM
-                        (SELECT 
+        WHERE
+            (source , transactionindex) IN (SELECT 
+                    source, MAX(transactionindex)
+                FROM
+                    (SELECT 
                         a.*
                     FROM
                         delegates a
@@ -549,19 +552,31 @@ where block > blocknumber() - 45000 and block <= blocknumber()
                         block <= BLOCKNUMBER()
                     GROUP BY source) b ON a.source = b.source
                         AND a.block = b.block) zz
-                    GROUP BY source))
-                    AND recipient IN (select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber()
-) UNION ALL SELECT 
-        address,
-            address,
-            GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) stake,
-            block,
-            'guardian' type,
-            GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.08 / 117.23 as reward
-            from computed_guardians_at_block
-            where address IN (select gv.address from guardians_votes gv
-where block > blocknumber() - 45000 and block <= blocknumber())
+                GROUP BY source))
+        AND recipient IN (SELECT 
+            gv.address
+        FROM
+            guardians_votes gv
+        WHERE
+            block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                AND block <= BLOCKNUMBER()) 
+UNION ALL SELECT 
+    address,
+    address,
+    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) stake,
+    block,
+    'guardian' type,
+    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.08 / NUMBER_OF_PERIODS() AS reward
+FROM
+    computed_guardians_at_block
+WHERE
+    address IN (SELECT 
+            gv.address
+        FROM
+            guardians_votes gv
+        WHERE
+            block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                AND block <= BLOCKNUMBER())
 
 /* validators rewards */
 -- validator rewards - stake_at_block * (0.04 / 117.23) = 0.0003412... (not natural) + 1M/117.23 (8530.2396... not natural again)
@@ -578,8 +593,8 @@ SELECT
     KNOWN(address) AS name,
     address,
     GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS stake,
-    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.04 / 117.23 AS stake_reward,
-    1000000 / 117.23 AS million_reward_in_orbs
+    GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) * 0.04 / NUMBER_OF_PERIODS() AS stake_reward,
+    1000000 / NUMBER_OF_PERIODS() AS million_reward_in_orbs
 FROM
     validators
 WHERE
