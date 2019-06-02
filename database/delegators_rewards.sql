@@ -3,9 +3,9 @@ CREATE  OR REPLACE VIEW `delegators_rewards` AS
 -- returns the delegates rewards as a specific block number - which should an elections block number 
 -- this is just the delegates part on a **specific** block, not the accumulated reward
 SELECT 
-    source as address,
-    known(source) as known,
-    get_region(source) as region,
+    source AS address,
+    KNOWN(source) AS known,
+    GET_REGION(source) AS region,
     IN_ORBS(stake) AS stake,
     type,
     IN_ORBS(delegators_reward) AS delegators_reward
@@ -60,12 +60,17 @@ FROM
             FROM
                 delegates)
             AND recipient IN (SELECT 
-                gv.address
+                address
             FROM
-                guardians_votes gv
+                computed_guardians_at_block
             WHERE
-                block > BLOCKNUMBER() - VOTE_VALID_BLOCKS()
-                    AND block <= BLOCKNUMBER()) UNION ALL SELECT 
+                address IN (SELECT 
+                        gv.address
+                    FROM
+                        guardians_votes gv
+                    WHERE
+                        block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
+                            AND block <= BLOCKNUMBER())) UNION ALL SELECT 
         source,
             recipient,
             GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,
@@ -109,12 +114,17 @@ FROM
                         AND a.block = b.block) zz
                     GROUP BY source))
             AND recipient IN (SELECT 
-                gv.address
+                address
             FROM
-                guardians_votes gv
+                computed_guardians_at_block
             WHERE
-                block > BLOCKNUMBER() - VOTE_VALID_BLOCKS()
-                    AND block <= BLOCKNUMBER()) UNION ALL SELECT 
+                address IN (SELECT 
+                        gv.address
+                    FROM
+                        guardians_votes gv
+                    WHERE
+                        block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
+                            AND block <= BLOCKNUMBER())) UNION ALL SELECT 
         address AS source,
             address AS recipient,
             GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) stake,
@@ -129,5 +139,5 @@ FROM
             FROM
                 guardians_votes gv
             WHERE
-                block > BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
                     AND block <= BLOCKNUMBER())) main_agg;
