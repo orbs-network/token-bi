@@ -25,10 +25,12 @@ IF the_region = "unknown" THEN
 	ORDER BY block
 	LIMIT 1;
 
-	CALL sp_get_region(address_source, the_region);
-    IF the_region = "Exchange" THEN
-		SELECT "From Exchange" INTO the_region;
-	END IF;
+	IF address_source != the_address THEN
+		CALL sp_get_region(address_source, the_region);
+		IF the_region = "Exchange" THEN
+			SELECT "From Exchange" INTO the_region;
+		END IF;
+    END IF;
 END IF;
 END$$
 

@@ -1,7 +1,7 @@
 USE `orbs_token`;
 CREATE  OR REPLACE VIEW `guardians_rewards` AS
     SELECT 
-        known_name,
+        known_name as known,
         address,
         guardian_total_stake,
         guardian_total_stake / orbs_total_stake AS voting_power,
