@@ -1,6 +1,6 @@
 CREATE FUNCTION blockNumber() RETURNS INTEGER DETERMINISTIC NO SQL RETURN @blockNumber;
 
-CREATE VIEW delegations_at_block as
+CREATE  OR REPLACE VIEW delegations_at_block as
 SELECT 
     known_name,
     address,
@@ -67,9 +67,12 @@ FROM
                         AND a.block = b.block) trnsfr_same_most_recent_transfers
                     GROUP BY source))
             AND source NOT IN (SELECT 
-                source
-            FROM
-                delegates) UNION ALL SELECT 
+            source
+        FROM
+            delegates
+        WHERE
+            block <= BLOCKNUMBER()) 
+    UNION ALL SELECT 
         source,
             recipient,
             GET_STAKE_AT_BLOCK(source, BLOCKNUMBER()) stake,

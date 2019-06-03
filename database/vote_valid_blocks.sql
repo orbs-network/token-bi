@@ -3,11 +3,10 @@ DROP function IF EXISTS `vote_valid_blocks`;
 
 DELIMITER $$
 USE `orbs_token`$$
-CREATE FUNCTION `vote_valid_blocks` ()
-RETURNS BIGINT
+CREATE DEFINER=`orbs`@`%` FUNCTION `vote_valid_blocks`() RETURNS bigint(20)
 BEGIN
 
-RETURN 45000;
+RETURN 45500;
 END$$
 
 DELIMITER ;

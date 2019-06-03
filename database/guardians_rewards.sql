@@ -19,7 +19,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
                 FROM
                     guardians_votes gv
                 WHERE
-                    block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                    block > BLOCKNUMBER() - 45500
                         AND block <= BLOCKNUMBER())) total_stake,
         (SELECT 
             IN_ORBS(SUM(total_stake)) AS orbs_top10_total_stake
@@ -35,7 +35,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
                 FROM
                     guardians_votes gv
                 WHERE
-                    block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                    block > BLOCKNUMBER() - 45500
                         AND block <= BLOCKNUMBER())
         ORDER BY d.total_stake DESC
         LIMIT 10) top10) top10_total_stake,
@@ -53,7 +53,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
                 FROM
                     guardians_votes gv
                 WHERE
-                    block >= BLOCKNUMBER() - VOTE_VALID_BLOCKS()
+                    block > BLOCKNUMBER() - 45500
                         AND block <= BLOCKNUMBER())
         ORDER BY d.total_stake DESC
         LIMIT 10) guardian_data;;

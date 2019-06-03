@@ -56,9 +56,11 @@ FROM
                         AND a.block = b.block) trnsfr_same_most_recent_transfers
                     GROUP BY source))
             AND source NOT IN (SELECT 
-                source
-            FROM
-                delegates)
+                    source
+                FROM
+                    delegates
+                WHERE
+                    block <= BLOCKNUMBER()) 
             AND recipient IN (SELECT 
                 address
             FROM
@@ -69,7 +71,7 @@ FROM
                     FROM
                         guardians_votes gv
                     WHERE
-                        block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
+                        block > BLOCKNUMBER() - 45500
                             AND block <= BLOCKNUMBER())) UNION ALL SELECT 
         source,
             recipient,
@@ -123,7 +125,7 @@ FROM
                     FROM
                         guardians_votes gv
                     WHERE
-                        block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
+                        block > BLOCKNUMBER() - 45500
                             AND block <= BLOCKNUMBER())) UNION ALL SELECT 
         address AS source,
             address AS recipient,
@@ -139,5 +141,5 @@ FROM
             FROM
                 guardians_votes gv
             WHERE
-                block > CAST(BLOCKNUMBER() - VOTE_VALID_BLOCKS() AS UNSIGNED)
+                block > BLOCKNUMBER() - 45500
                     AND block <= BLOCKNUMBER())) main_agg;

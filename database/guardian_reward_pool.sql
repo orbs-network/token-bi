@@ -20,7 +20,7 @@ WHERE
         FROM
             guardians_votes gv
         WHERE
-            block > (electionsBlock - VOTE_VALID_BLOCKS())
+            block > electionsBlock - 45500
                 AND block <= electionsBlock);
 
 -- more than 400million stake? pool is capped at 40M annual, and reward eventually is 10% stake
