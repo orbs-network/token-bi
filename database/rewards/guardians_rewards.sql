@@ -56,4 +56,4 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
                     block > BLOCKNUMBER() - 45500
                         AND block <= BLOCKNUMBER())
         ORDER BY d.total_stake DESC
-        LIMIT 10) guardian_data;;
+        LIMIT 10) guardian_data;

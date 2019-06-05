@@ -11,7 +11,7 @@ IF address = "0x0000000000000000000000000000000000000000" THEN
     SELECT 0 INTO stake;
 ELSE
     SELECT 
-        r.received - s.sent
+        r.received - s.sent - MOD(r.received - s.sent, 1000000000000000000) 
     INTO stake FROM
         (SELECT 
             COALESCE(SUM(amount), 0) sent
