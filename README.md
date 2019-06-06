@@ -1,6 +1,6 @@
 # token-bi
 
-This Repo holds scripts to extract all the ERC20 transfer events and orbs PoS related events from Ethereum to an external database for research and analysis.
+This Repo holds scripts to extract all the ERC20 transfer events and Orbs PoS related events from Ethereum to an external database for research and analysis.
 
 Part of its usage it to act as a control mechanism for the calculation of rewards around the PoS ecosystem.
 
@@ -37,7 +37,7 @@ The database is denormalized, there are no relations between tables to simplify 
 
 | Name               | Description                                                      |
 |--------------------|------------------------------------------------------------------|
-| transfers          | Holds all ERC20 transfer events for Orbs token                   |
+| transfers          | Holds all ERC20 transfer events for ORBS token                   |
 | delegates          | The delegate events from the Orbs PoS Voting contract            |
 | known_addresses    | Helps track exchanges and other known entities                   |
 | guardians_register | Register events for guardians in the Orbs PoS Guardians contract |
