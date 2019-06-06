@@ -602,6 +602,110 @@ WHERE
 )x
 
 
+/* raw delegation list per election */
+SELECT 
+        source,
+            recipient,
+            in_orbs(GET_STAKE_AT_BLOCK(source, BLOCKNUMBER())) stake,
+            block,
+            'transfer' type
+    FROM
+        transfers t
+    WHERE
+        source != recipient
+            AND id IN (SELECT 
+                id
+            FROM
+                (SELECT 
+                a.*
+            FROM
+                transfers a
+            INNER JOIN (SELECT 
+                source, MAX(block) block
+            FROM
+                transfers
+            WHERE
+                amount = 70000000000000000
+                    AND block <= BLOCKNUMBER()
+            GROUP BY source) b ON a.source = b.source
+                AND a.block = b.block) trnsfr_most_recent_transfers
+            WHERE
+                (source , transactionindex) IN (SELECT 
+                        source, MAX(transactionindex)
+                    FROM
+                        (SELECT 
+                        a.*
+                    FROM
+                        transfers a
+                    INNER JOIN (SELECT 
+                        source, MAX(block) block
+                    FROM
+                        transfers
+                    WHERE
+                        amount = 70000000000000000
+                            AND block <= BLOCKNUMBER()
+                    GROUP BY source) b ON a.source = b.source
+                        AND a.block = b.block) trnsfr_same_most_recent_transfers
+                    GROUP BY source))
+            AND source NOT IN (SELECT 
+            source
+        FROM
+            delegates
+        WHERE
+            block <= BLOCKNUMBER()) 
+    UNION ALL SELECT 
+        source,
+            recipient,
+            in_orbs(GET_STAKE_AT_BLOCK(source, BLOCKNUMBER())) stake,
+            block,
+            'delegate' type
+    FROM
+        delegates
+    WHERE
+        id IN (SELECT 
+                id
+            FROM
+                (SELECT 
+                a.*
+            FROM
+                delegates a
+            INNER JOIN (SELECT 
+                id, source, MAX(block) block
+            FROM
+                delegates
+            WHERE
+                block <= BLOCKNUMBER()
+            GROUP BY source) b ON a.source = b.source
+                AND a.block = b.block) dlgt_most_recent
+            WHERE
+                (source , transactionindex) IN (SELECT 
+                        source, MAX(transactionindex)
+                    FROM
+                        (SELECT 
+                        a.*
+                    FROM
+                        delegates a
+                    INNER JOIN (SELECT 
+                        source, MAX(block) block
+                    FROM
+                        delegates
+                    WHERE
+                        block <= BLOCKNUMBER()
+                    GROUP BY source) b ON a.source = b.source
+                        AND a.block = b.block) zz
+                    GROUP BY source))
+--  UNION SELECT 
+--  
+--    address,
+--             address,
+--             in_orbs(GET_STAKE_AT_BLOCK(address, BLOCKNUMBER())) stake,
+--             block,
+--             'guardian' type
+--  
+--     FROM
+--         computed_guardians_at_block
+
+
 /* time format */
 select FROM_UNIXTIME(blocktime, '%Y-%m-%dT%TZ') from transfers
 
