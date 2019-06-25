@@ -6,6 +6,8 @@ USE `orbs_token`$$
 CREATE DEFINER=`orbs`@`%` PROCEDURE `get_rewards_aggregate`(IN election_num INTEGER)
 BEGIN
 
+SET @recentblocknumber := get_elections_block(election_num);
+
 DROP TEMPORARY TABLE IF EXISTS tmp_rewards;
 CREATE TEMPORARY TABLE IF NOT EXISTS tmp_rewards(
     known VARCHAR(200),
@@ -39,6 +41,7 @@ SELECT
     address,
     known,
     GET_REGION(address) AS region,
+    IN_ORBS(GET_STAKE_AT_BLOCK(address, @recentblocknumber)) AS holdings_at_recent_election,
     IN_ORBS(GET_STAKE(address)) AS current_holdings,
     SUM(delegate_reward) AS accum_delegate_reward,
     SUM(validator_reward) AS accum_validator_reward,
