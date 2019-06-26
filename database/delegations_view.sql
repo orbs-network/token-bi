@@ -4,10 +4,11 @@ CREATE  OR REPLACE VIEW delegations_at_block as
 SELECT 
     known_name,
     address,
-    MAX(delegated_stake),
-    own_stake,
-    total_stake,
-    is_guardian
+    in_orbs(MAX(delegated_stake)) AS total_delegated,
+    in_orbs(own_stake) AS own_stake,
+    in_orbs(total_stake) AS total_stake,
+    is_guardian,
+    guardian_vote_valid_at_block(address, BLOCKNUMBER()) AS voted
 FROM
     (SELECT 
         KNOWN(recipient) AS known_name,
@@ -113,13 +114,15 @@ FROM
                     GROUP BY source) b ON a.source = b.source
                         AND a.block = b.block) zz
                     GROUP BY source))) dlgt_same_most_recent
-    GROUP BY recipient) agg UNION SELECT 
+    GROUP BY recipient) agg 
+    
+    UNION SELECT 
         KNOWN(address) AS known_name,
             address AS address,
             0 AS delegated_stake,
             GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS own_stake,
             GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS total_stake,
-            1 AS is_guardian
+            1 AS is_guardian 
     FROM
         computed_guardians_at_block) with_non_delegated_guardians
 GROUP BY address
