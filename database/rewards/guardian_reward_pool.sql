@@ -10,7 +10,7 @@ DECLARE all_stake DECIMAL(29,0) DEFAULT 0;
 
 
 SELECT 
-    IN_ORBS(SUM(total_stake))
+    SUM(total_stake)
 INTO all_stake FROM
     (SELECT 
         *

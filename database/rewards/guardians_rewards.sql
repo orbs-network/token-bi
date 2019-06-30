@@ -9,7 +9,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
         orbs_pool_size * guardian_total_stake / orbs_top10_total_stake AS top10_guardian_reward
     FROM
         (SELECT 
-            IN_ORBS(SUM(total_stake)) AS orbs_total_stake
+            SUM(total_stake) AS orbs_total_stake
         FROM
             delegations_at_block d
         WHERE
@@ -22,7 +22,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
                     block > BLOCKNUMBER() - 45500
                         AND block <= BLOCKNUMBER())) total_stake,
         (SELECT 
-            IN_ORBS(SUM(total_stake)) AS orbs_top10_total_stake
+            SUM(total_stake) AS orbs_top10_total_stake
         FROM
             (SELECT 
             d.known_name, d.address, d.total_stake
@@ -43,7 +43,7 @@ CREATE  OR REPLACE VIEW `guardians_rewards` AS
         (SELECT 
             d.known_name,
                 d.address,
-                IN_ORBS(d.total_stake) AS guardian_total_stake
+                d.total_stake AS guardian_total_stake
         FROM
             delegations_at_block d
         WHERE
