@@ -286,24 +286,47 @@ order by dlgt_same_most_recent.block
 select d.* from (select @blockNumber:=7528900) param, delegations_at_block d
 
 /* create a region pivoted view of stake holding */
-set @blockNum := 7662975;
+set @blockNumber := 8288900;
 select 
-	SUM(get_stake_at_block(source, @blockNum)) / 1000000000000000000 as total_stake, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
-	SUM(get_stake_if_delegated_at_block(source, @blockNum)) / 1000000000000000000 as delegated_stake, -- if did not stake, returns zero (for summation)
-    region, 
-	count(source) as "number of addresses"
+	total_stake,
+    delegated_stake,
+    region,
+    noa as "number of addresses",
+    noda as "number of delegating addresses",
+    distributed,
+	total_stake / distributed as "remaining stake",
+    delegated_stake / total_stake as "delegation %"
 from (
-	select source, 
-    known(source), 
-    known_from(source), 
-    get_region(source) region 
-    from (
-		select source from transfers 
-		union -- union will also run distinct for us
-		select recipient from transfers
-		)all_unique_addresses
-	)formatted_region_data
-group by region
+	select 
+		total_stake,
+		delegated_stake,
+		agg_frd.region,
+		noa,
+		noda,
+		IFNULL(SUM(ka.tde_funds), 0) distributed
+	from (
+		select 
+			in_orbs(SUM(get_stake_at_block(source, @blockNumber))) as total_stake, -- if the address did not exist at that block, the stake will be 0, which is okay for this summation (zero is neutral)
+			in_orbs(SUM(get_stake_if_delegated_at_block(source, @blockNumber))) as delegated_stake, -- if did not stake, returns zero (for summation)
+			region, 
+			count(source) as noa,
+			SUM(CASE WHEN get_stake_if_delegated_at_block(source, @blockNumber)=0 THEN 0 ELSE 1 END) as noda
+		from (
+			select source, 
+			known(source), 
+			known_from(source), 
+			get_region(source) region 
+			from (
+				select source from transfers 
+				union -- union will also run distinct for us
+				select recipient from transfers
+				)all_unique_addresses
+			)frd
+		group by region
+	)agg_frd
+	left join known_addresses ka on agg_frd.region = ka.region
+	group by region
+)with_tde
 
 /* transactions and volume by day */
 SELECT 

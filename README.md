@@ -67,4 +67,5 @@ A Note about views, most of the views use a function called `BLOCKNUMBER()`, it 
 
 ### Stored Procedures:
 
-* `get_rewards_aggregate(number)` - all aggregate and get all of the reward data for the first X elections, depends on the input number, it uses the function `get_elections_block` internally to set the block number for the different blocks
+* `get_rewards_aggregate(number)` - will aggregate and get all of the reward data for the first X elections, it calls `get_rewards_aggregate_in_range(number,1)`
+* `get_rewards_aggregate_in_range(start,end)` - will aggregate and get all of the reward data for the `start` election to `end` election, depends on the input number, it uses the function `get_elections_block` internally to set the block number for the different blocks
