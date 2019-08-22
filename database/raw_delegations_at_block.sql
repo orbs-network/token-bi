@@ -1,6 +1,4 @@
-CREATE FUNCTION blockNumber() RETURNS INTEGER DETERMINISTIC NO SQL RETURN @blockNumber;
-
-CREATE  OR REPLACE VIEW delegations_at_block as
+CREATE  OR REPLACE VIEW raw_delegations_at_block as
 SELECT 
     known_name,
     address,
