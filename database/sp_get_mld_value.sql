@@ -5,7 +5,6 @@ DELIMITER $$
 USE `orbs_token`$$
 CREATE DEFINER=`orbs`@`%` PROCEDURE `sp_get_mld_value`(IN source CHAR(42), IN last_own DECIMAL(29, 0), OUT total_delegate DECIMAL(29,0), OUT guardian_address CHAR(42))
 BEGIN
--- DECLARE d_to CHAR(42) DEFAULT "";
 DECLARE td, own, ts DECIMAL(29,0) DEFAULT 0;
 DECLARE is_g tinyint(1) DEFAULT 0;
 

@@ -1,7 +1,7 @@
 
 CREATE  OR REPLACE VIEW delegations_at_block as
 SELECT 
-	known(address),
+	known(address) as known_name,
 	address,
 	SUM(total_delegated) as total_delegated,
 	SUM(own_stake) as own_stake,
