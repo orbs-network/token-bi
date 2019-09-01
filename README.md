@@ -60,7 +60,8 @@ A Note about views, most of the views use a function called `BLOCKNUMBER()`, it 
 
 `select d.* from (select @blockNumber:=7528900) param, delegations_at_block d`
 
-* `delegations_at_block` - returns all the delegation numbers pivoted by the delegate target (all of which should be a guardian, but we have some incorrect delegations in the ecosystem as of writing this)
+* `delegations_at_block` - returns all the delegation numbers pivoted by the delegate target. This calculation includes bad delegations (delgations made to a non-guardian address) and multi level delegations (delegate to someone who later delegates to a guardian). The guardian delegation values include the multi level ones.
+* `total_delegated_to_address_at_block` - returns the total delegated to a specific addresses, uses the function ADDRESS() to get the address as a parameter, it reads @address variable so set it before calling.
 * `computed_guardians_at_block` - the guardian list at a block (taking leave events into account)
 * `xxxxxxx_rewards` - these are three views, guardians/delegators/validators views which return the raw rewards for a single election (by block)
 * `all_rewards` - union of the above three
@@ -69,3 +70,5 @@ A Note about views, most of the views use a function called `BLOCKNUMBER()`, it 
 
 * `get_rewards_aggregate(number)` - will aggregate and get all of the reward data for the first X elections, it calls `get_rewards_aggregate_in_range(number,1)`
 * `get_rewards_aggregate_in_range(start,end)` - will aggregate and get all of the reward data for the `start` election to `end` election, depends on the input number, it uses the function `get_elections_block` internally to set the block number for the different blocks
+* `sp_get_region(address, region)` - will return the region of the given address into the `region` parameter. This will query the different Orbs token transfer trail until an address with a known region is found. If the source is coming from an Exchange, the region will be 'From Exchange'
+* `sp_get_mld_value(source, last_own, total_delegate, guardian_address)` - will return the total multi level delegation (stake) for that guardian address. It will recurse starting at `source` to find out which guardian is eventually getting the delegation values. The purpose is to call this when we see delegation values on non-guardians, meaning that they are delegating to a guardian in a multi level delegation. `last_own` is used for tracking the value of the last delegator own delegation value in the recursion, and should be initiated with 0. It will be reduced from the total delegation when a guardian is found as its included in the regular calculation per guardian.
