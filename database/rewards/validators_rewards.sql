@@ -17,4 +17,5 @@ CREATE  OR REPLACE VIEW `validators_rewards` AS
         FROM
             validators
         WHERE
-            COALESCE(validUntilBlock, POW(2, 64) - 1) > BLOCKNUMBER()) res;
+            COALESCE(validUntilBlock, POW(2, 64) - 1) > BLOCKNUMBER()
+            AND addedAtBlock < BLOCKNUMBER()) res;
