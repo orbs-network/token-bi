@@ -3,7 +3,7 @@ DROP procedure IF EXISTS `sp_get_region`;
 
 DELIMITER $$
 USE `orbs_token`$$
-CREATE DEFINER=`orbs`@`%` PROCEDURE `sp_get_region`(IN the_address CHAR(42), OUT the_region VARCHAR(50), OUT distance INT)
+CREATE DEFINER=`orbs`@`%` PROCEDURE `sp_get_region`(IN the_address CHAR(42), OUT the_region VARCHAR(50), INOUT distance INT)
 BEGIN
 DECLARE address_source CHAR(42) DEFAULT the_address;
 SELECT "unknown" into the_region;
