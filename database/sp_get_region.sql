@@ -3,7 +3,7 @@ DROP procedure IF EXISTS `sp_get_region`;
 
 DELIMITER $$
 USE `orbs_token`$$
-CREATE DEFINER=`orbs`@`%` PROCEDURE `sp_get_region`(IN the_address CHAR(42), OUT the_region VARCHAR(50))
+CREATE DEFINER=`orbs`@`%` PROCEDURE `sp_get_region`(IN the_address CHAR(42), OUT the_region VARCHAR(50), OUT distance INT)
 BEGIN
 DECLARE address_source CHAR(42) DEFAULT the_address;
 SELECT "unknown" into the_region;
@@ -16,6 +16,8 @@ WHERE
     address = the_address;
 
 IF the_region = "unknown" THEN
+	SELECT distance + 1 INTO distance;
+
 	SELECT 
 		source
 	INTO address_source FROM
@@ -26,7 +28,7 @@ IF the_region = "unknown" THEN
 	LIMIT 1;
 
 	IF address_source != the_address THEN
-		CALL sp_get_region(address_source, the_region);
+		CALL sp_get_region(address_source, the_region, distance);
 		IF the_region = "Exchange" THEN
 			SELECT "From Exchange" INTO the_region;
 		END IF;
