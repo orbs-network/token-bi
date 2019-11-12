@@ -1,6 +1,6 @@
-const Web3 = require('web3');
-const fs = require('fs');
-const ProgressBar = require('progress');
+import Web3 from 'web3';
+import fs from "fs";
+import ProgressBar from "progress";
 
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
