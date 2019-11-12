@@ -14,11 +14,11 @@ const doTransfers = true;
 const doDelegates = true;
 const doGuardians = true;
 const doVotes = true;
-const voteout_filename = "votes.csv";
-let transfers_filename = "transfers.csv";
-let delegate_filename = "delegates.csv";
-const guardian_register_filename = "guardian_register.csv"
-const guardian_leave_filename = "guardian_leave.csv"
+const filenameVoteOut = "votes.csv";
+let filenameTransfers = "transfers.csv";
+let filenameDelegates = "delegates.csv";
+const filenameGuardiansRegister = "guardian_register.csv";
+const filenameGuardiansLeave = "guardian_leave.csv";
 const withHumanDate = false;
 const TOKEN_ABI = [{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"who","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}];
 const VOTING_ABI = [{"anonymous":false,"inputs":[{"indexed":true,"name":"voter","type":"address"},{"indexed":false,"name":"validators","type":"address[]"},{"indexed":false,"name":"voteCounter","type":"uint256"}],"name":"VoteOut","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"delegator","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"delegationCounter","type":"uint256"}],"name":"Delegate","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"delegator","type":"address"},{"indexed":false,"name":"delegationCounter","type":"uint256"}],"name":"Undelegate","type":"event"},{"constant":false,"inputs":[{"name":"validators","type":"address[]"}],"name":"voteOut","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"to","type":"address"}],"name":"delegate","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"undelegate","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"guardian","type":"address"}],"name":"getCurrentVote","outputs":[{"name":"validators","type":"address[]"},{"name":"blockNumber","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"guardian","type":"address"}],"name":"getCurrentVoteBytes20","outputs":[{"name":"validatorsBytes20","type":"bytes20[]"},{"name":"blockNumber","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"delegator","type":"address"}],"name":"getCurrentDelegation","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"}];
@@ -51,12 +51,12 @@ function validateInput() {
         endBlock = 'latest';
     }
 
-    if (!transfers_filename) {
-        transfers_filename = 'transfers.csv';
+    if (!filenameTransfers) {
+        filenameTransfers = 'transfers.csv';
     }
 
-    if (!delegate_filename) {
-        delegate_filename = 'delegates.csv';
+    if (!filenameDelegates) {
+        filenameDelegates = 'delegates.csv';
     }
 }
 
@@ -75,9 +75,11 @@ function getToAddressAddressFromEvent(event) {
     return "NA";
 }
 
-function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData) {
+function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unixDate, humanDate, logData) {
     return {
-        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData
+        // NOTE : needs to manually check the return object property names
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
     }
 }
 
@@ -122,10 +124,10 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                 transactionBlock = await web3.eth.getBlock(event.blockNumber);
                 blockCache[event.blockNumber] = transactionBlock;
             }
-            const unix_date = transactionBlock.timestamp;
-            const jsDate = new Date(unix_date*1000);
-            let human_date = jsDate.toUTCString();
-            human_date = human_date.slice(0, 3) + human_date.slice(4);
+            const unixdate = transactionBlock.timestamp;
+            const jsDate = new Date(unixdate*1000);
+            let humanDate = jsDate.toUTCString();
+            humanDate = humanDate.slice(0, 3) + humanDate.slice(4);
             let amount = 0;
             let logData = [];
             if (event.raw.data != null) { // no data for guardians event
@@ -146,7 +148,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                     amount = web3.utils.toBN(event.raw.data);
                 }
             }
-            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, receipientAddress, event.event, unix_date, human_date, logData);
+            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, receipientAddress, event.event, unixdate, humanDate, logData);
             rows.push(obj);
             bar.tick()
         }
@@ -242,23 +244,23 @@ async function main() {
     const web3 = await new Web3(new Web3.providers.HttpProvider(ethereumConnectionURL));
     if (doTransfers) {
         const tokenContract = await new web3.eth.Contract(TOKEN_ABI, erc20ContractAddress);
-        await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, TRANSFERS_HEADER, formatTransfer, transfers_filename);
+        await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, TRANSFERS_HEADER, formatTransfer, filenameTransfers);
     }
 
     if (doDelegates) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
-        await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, DELEGATES_HEADER, formatDelegate, delegate_filename);
+        await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, DELEGATES_HEADER, formatDelegate, filenameDelegates);
     }
 
     if (doGuardians) {
         const guardianContract = await new web3.eth.Contract(GUARDIANS_ABI, guardiansContractAddress);
-        await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, guardian_register_filename);
-        await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, guardian_leave_filename);
+        await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, filenameGuardiansRegister);
+        await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, filenameGuardiansLeave);
     }
 
     if (doVotes) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
-        await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, voteout_filename);
+        await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, filenameVoteOut);
     }
 }
 
