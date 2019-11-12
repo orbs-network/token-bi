@@ -13,7 +13,7 @@ There are two main parts to this system
 
 ## Installation and setup
 
-To extract the data, after cloning the repo open `export-data.js` and look into the different constants at the top, not going into too many details, we assume you understand what blocks are and how web3 works at the high level. We extract transfer events (ERC20), delegate events (Orbs PoS), guardian register/leave and voting (also Orbs PoS)
+To extract the data, after cloning the repo open `export-data.ts` and look into the different constants at the top, not going into too many details, we assume you understand what blocks are and how web3 works at the high level. We extract transfer events (ERC20), delegate events (Orbs PoS), guardian register/leave and voting (also Orbs PoS)
 
 Data is extracted to csv files and indented to then be imported into a MySQL server for analysis.
 
@@ -21,9 +21,9 @@ The analysis part is entirely written in plain SQL and should work on any sql ba
 
 ## Using the Ethereum data export
 
-After cloning, run `npm install` and then use `node export-data.js` to trigger it.
+After cloning, run `npm install` and then use `node export-data.ts` to trigger it.
 
-It is important to check the settings inside the `export-data.js` before running it, such as which blocks to run on - it works fine with Infura nodes and does not require any special setup from the Ethereum node.
+It is important to check the settings inside the `export-data.ts` before running it, such as which blocks to run on - it works fine with Infura nodes and does not require any special setup from the Ethereum node.
 
 ## Using the SQL scripts
 

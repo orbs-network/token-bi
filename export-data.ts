@@ -7,7 +7,7 @@ let ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca3
 let erc20ContractAddress = "0xff56Cc6b1E6dEd347aA0B7676C85AB0B3D08B0FA"; //token contract
 let votingContractAddress = "0x30f855afb78758Aa4C2dc706fb0fA3A98c865d2d"; //voting
 let guardiansContractAddress = "0xD64B1BF6fCAb5ADD75041C89F61816c2B3d5E711"; //guardians - not used yet
-let startBlock = "8468901";//transactions start at 7437000; //contract created at 5710114 
+let startBlock = "8468901";//transactions start at 7437000; //contract created at 5710114
 let endBlock = "8548900"; // last elections as of now.. first election at 7528900
 let interval = 100000;
 let doTransfers = true;
@@ -15,7 +15,7 @@ let doDelegates = true;
 let doGuardians = true;
 let doVotes = true;
 let voteout_filename = "votes.csv";
-let transfers_filename = "transfers.csv"; 
+let transfers_filename = "transfers.csv";
 let delegate_filename = "delegates.csv";
 let guardian_register_filename = "guardian_register.csv"
 let guardian_leave_filename = "guardian_leave.csv"
@@ -54,7 +54,7 @@ function validateInput() {
     if (!transfers_filename) {
         transfers_filename = 'transfers.csv';
     }
-    
+
     if (!delegate_filename) {
         delegate_filename = 'delegates.csv';
     }
@@ -78,7 +78,7 @@ function getToAddressAddressFromEvent(event) {
 function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData) {
     return {
         amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date, human_date, logData
-    }    
+    }
 }
 
 async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
@@ -94,7 +94,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
         let events = await contract.getPastEvents(eventName, options);
         var green = '\u001b[42m \u001b[0m';
         var red = '\u001b[41m \u001b[0m';
-        let bar = new ProgressBar(':bar \x1b[33m:percent :current/:total time spent: :elapseds done in: :etas\x1b[0m', { 
+        let bar = new ProgressBar(':bar \x1b[33m:percent :current/:total time spent: :elapseds done in: :etas\x1b[0m', {
               complete: green,
               incomplete: red,
               width: 80,
@@ -110,7 +110,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                         console.log("Transaction failed, event ignored txid: " + event.transactionHash);
                         continue;
                     }
-                }               
+                }
             }
 
             let sourceAddress = getFromAddressAddressFromEvent(event);
@@ -120,7 +120,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
             let transactionBlock = blockCache[event.blockNumber];
             if (transactionBlock == undefined) {
                 transactionBlock = await web3.eth.getBlock(event.blockNumber);
-                blockCache[event.blockNumber] = transactionBlock; 
+                blockCache[event.blockNumber] = transactionBlock;
             }
             let unix_date = transactionBlock.timestamp;
             let jsDate = new Date(unix_date*1000);
@@ -141,7 +141,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                         type: 'uint256',
                         name: 'counter'
                     }], event.raw.data, event.raw.topics[1]);
-                    
+
                 } else {
                     amount = web3.utils.toBN(event.raw.data);
                 }
@@ -210,12 +210,12 @@ function formatTransfer(row) {
 
 function formatGuardian(row) {
 let humanDatePart = getHumanDateForRow(row, ",");
-    return `${row.transferFrom},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;    
+    return `${row.transferFrom},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
 }
 
 function formatVoteOut(row) {
 let humanDatePart = getHumanDateForRow(row, ";");
-    return `${row.logData.counter.toString(10)};${row.transferFrom};${JSON.stringify(row.logData.validators)};${row.transactionIndex};${row.txHash};${row.block};${row.unix_date}${humanDatePart}\n`;    
+    return `${row.logData.counter.toString(10)};${row.transferFrom};${JSON.stringify(row.logData.validators)};${row.transactionIndex};${row.txHash};${row.block};${row.unix_date}${humanDatePart}\n`;
 }
 
 async function getEvents(web3, contract, eventName, csvHeader, appendFunc, outputFilename) {
@@ -225,7 +225,7 @@ async function getEvents(web3, contract, eventName, csvHeader, appendFunc, outpu
     let csvStr = csvHeader + "\n";
     if (withHumanDate) {
         csvStr = csvHeader + ',HumanDate\n';
-    } 
+    }
 
     for (let i = 0;i < eventsData.length;i++) {
         let row = eventsData[i];
@@ -238,6 +238,7 @@ async function getEvents(web3, contract, eventName, csvHeader, appendFunc, outpu
 
 async function main() {
     validateInput();
+
     let web3 = await new Web3(new Web3.providers.HttpProvider(ethereumConnectionURL));
     if (doTransfers) {
         let tokenContract = await new web3.eth.Contract(TOKEN_ABI, erc20ContractAddress);
@@ -257,7 +258,7 @@ async function main() {
 
     if (doVotes) {
         let votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
-        await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, voteout_filename);   
+        await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, voteout_filename);
     }
 }
 
