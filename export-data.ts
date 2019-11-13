@@ -3,7 +3,8 @@ import { AbiItem } from 'web3-utils';
 import fs from "fs";
 import ProgressBar from "progress";
 
-import { EventData } from 'web3-eth-contract';
+import { EventData, EventOptions } from 'web3-eth-contract';
+import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './src/eventDataExtraction';
 
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
@@ -63,20 +64,7 @@ function validateInput() {
     }
 }
 
-function getFromAddressAddressFromEvent(event: EventData) {
-    const TOPIC_FROM_ADDR = 1;
-    const topic = event.raw.topics[TOPIC_FROM_ADDR];
-    return '0x' + topic.substring(26);
-}
 
-function getToAddressAddressFromEvent(event: EventData) {
-    const TOPIC_TO_ADDR = 2;
-    const topic = event.raw.topics[TOPIC_TO_ADDR];
-    if (topic != null) {
-        return '0x' + topic.substring(26);
-    }
-    return "NA";
-}
 
 function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unixDate, humanDate, logData) {
     return {
@@ -88,7 +76,7 @@ function generateRowObject(amount, block, transactionIndex, txHash, transferFrom
 
 async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
     console.log('\x1b[33m%s\x1b[0m', `Reading from block ${startBlock} to block ${endBlock}`);
-    const options = {
+    const options: EventOptions = {
         fromBlock: startBlock,
         toBlock: endBlock
     };
