@@ -41,6 +41,7 @@ typings/
 
 # IDEs
 .idea/
+.DS_Store
 
 # Optional npm cache directory
 .npm
