@@ -47,11 +47,16 @@ describe('Event data extraction', function () {
         });
 
         test("Should return null - when there is no 'to' address", () => {
+
+            // Test for null
             event.raw.topics[2] = null;
-
             const nullToAddress = getToAddressAddressFromEvent(event);
-
             expect(nullToAddress).toBe(null);
+
+            // Test for undefined
+            event.raw.topics[2] = null;
+            const undefinedToAddress = getToAddressAddressFromEvent(event);
+            expect(undefinedToAddress).toBe(null);
         });
     });
 

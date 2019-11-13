@@ -3,7 +3,9 @@ import { AbiItem } from 'web3-utils';
 import fs from "fs";
 import ProgressBar from "progress";
 
-import { EventData, EventOptions } from 'web3-eth-contract';
+// Imports for types
+import { EventData, EventOptions, Contract } from 'web3-eth-contract';
+
 import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './src/eventDataExtraction';
 import {
     formatDelegate,
@@ -55,11 +57,12 @@ function validateInput() {
     }
 
     if (!startBlock) {
-        startBlock = '7420000';
+        startBlock = 7420000;
     }
 
+    // TODO : ORL : Think about max value (instead of 'latest')
     if (!endBlock) {
-        endBlock = 'latest';
+        endBlock = 1_000_000;
     }
 
     if (!filenameTransfers) {
@@ -163,10 +166,12 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
     }
 }
 
-async function readAndMergeEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
+async function readAndMergeEvents(web3: Web3, contract: Contract,
+                                  startBlock: number, endBlock: number, eventName: string, requireSuccess: boolean) {
     let events = [];
-    let curBlockInt = parseFloat(startBlock);
-    const endBlockInt = parseFloat(endBlock);
+    let curBlockInt = startBlock;
+    const endBlockInt = endBlock;
+
     while (curBlockInt < endBlockInt) {
         let targetBlock = curBlockInt+interval-1
         if (targetBlock > endBlockInt) {
@@ -174,11 +179,14 @@ async function readAndMergeEvents(web3, contract, startBlock, endBlock, eventNam
         }
 
         const eventsInterval = await getAllPastEvents(web3, contract, curBlockInt, targetBlock, eventName, requireSuccess);
-        console.log('\x1b[33m%s\x1b[0m', `Found ${eventsInterval.length} ${eventName} events of Contract Address ${contract.address} between blocks ${curBlockInt} , ${targetBlock}`);
+
+        console.log('\x1b[33m%s\x1b[0m', `Found ${eventsInterval.length} ${eventName} events of Contract Address ${contract.options.address} between blocks ${curBlockInt} , ${targetBlock}`);
         curBlockInt += interval;
         events = events.concat(eventsInterval);
     }
-    console.log('\x1b[33m%s\x1b[0m', `Found total of ${events.length} ${eventName} events of Contract Address ${contract.address} between blocks ${startBlock} , ${endBlock}`);
+
+    console.log('\x1b[33m%s\x1b[0m', `Found total of ${events.length} ${eventName} events of Contract Address ${contract.options.address} between blocks ${startBlock} , ${endBlock}`);
+
     return events;
 }
 
@@ -194,7 +202,8 @@ function generateRowObject(amount: number, block: number,
     }
 }
 
-async function getEvents(web3, contract, eventName) : Promise<any[]> {
+async function getEvents(web3: Web3, contract: Contract, eventName: string,
+                         startBlock: number, endBlock: number) : Promise<any[]> {
     const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventName, false);
 
     console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
@@ -202,14 +211,16 @@ async function getEvents(web3, contract, eventName) : Promise<any[]> {
     return eventsData;
 }
 
-async function main(executionFlags: { doTransfers: boolean, doDelegates: boolean, doGuardians: boolean, doVotes: boolean }, outputFlags: { addHumanReadableDate: boolean }) {
+async function main(startBlock: number, endBlock: number,
+                    executionFlags: { doTransfers: boolean, doDelegates: boolean, doGuardians: boolean, doVotes: boolean },
+                    outputFlags: { addHumanReadableDate: boolean }) {
     validateInput();
 
     const web3 = await new Web3(new Web3.providers.HttpProvider(ethereumConnectionURL));
 
     if (executionFlags.doTransfers) {
         const tokenContract = await new web3.eth.Contract(TOKEN_ABI, erc20ContractAddress);
-        const transferEvents = await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME);
+        const transferEvents = await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, startBlock, endBlock);
 
         await writeEventsDataToCsv(transferEvents, TRANSFERS_HEADER, TRANSFER_EVENT_NAME, filenameTransfers, formatTransfer, outputFlags.addHumanReadableDate);
     }
@@ -217,7 +228,7 @@ async function main(executionFlags: { doTransfers: boolean, doDelegates: boolean
     if (executionFlags.doDelegates) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
 
-        const delegatesEvents = await getEvents(web3, votingContract, DELEGATE_EVENT_NAME);
+        const delegatesEvents = await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, startBlock, endBlock);
         await writeEventsDataToCsv(delegatesEvents, DELEGATES_HEADER, DELEGATE_EVENT_NAME, filenameDelegates, formatDelegate, outputFlags.addHumanReadableDate);
     }
 
@@ -225,23 +236,24 @@ async function main(executionFlags: { doTransfers: boolean, doDelegates: boolean
         const guardianContract = await new web3.eth.Contract(GUARDIANS_ABI, guardiansContractAddress);
 
         // Guardians register
-        const guardianRegisterEvents = await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME);
+        const guardianRegisterEvents = await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, startBlock, endBlock);
         await writeEventsDataToCsv(guardianRegisterEvents, GUARDIANS_HEADER, GUARDIAN_REGISTER_EVENT_NAME, filenameGuardiansRegister, formatGuardian, outputFlags.addHumanReadableDate);
 
         // Guardians leave
-        const guardianLeaveEvents = await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME);
+        const guardianLeaveEvents = await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, startBlock, endBlock);
         await writeEventsDataToCsv(guardianLeaveEvents, GUARDIANS_HEADER, GUARDIAN_LEAVE_EVENT_NAME, filenameGuardiansLeave, formatGuardian, outputFlags.addHumanReadableDate);
     }
 
     if (executionFlags.doVotes) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
 
-        const voteoutEvents = await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME);
+        const voteoutEvents = await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, startBlock, endBlock);
         await writeEventsDataToCsv(voteoutEvents, VOTEOUT_HEADER, VOTEOUT_EVENT_NAME, filenameVoteOut, formatVoteOut, outputFlags.addHumanReadableDate);
     }
 }
 
-main({
+main(startBlock, endBlock,
+    {
         doTransfers,
         doDelegates,
         doGuardians,
