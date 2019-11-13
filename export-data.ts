@@ -92,6 +92,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
               incomplete: red,
               width: 80,
               total: events.length });
+
         for (let i = events.length-1; i >= 0;i--) {
             const event = events[i];
             if (requireSuccess) {
@@ -106,8 +107,9 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                 }
             }
 
+            // Extract 'source' and 'recipient' addresses
             const sourceAddress = getFromAddressAddressFromEvent(event);
-            const receipientAddress = getToAddressAddressFromEvent(event);
+            const recipientAddress = getToAddressAddressFromEvent(event) || 'NA';
 
             // Get timestamp (with block cache)
             let transactionBlock = blockCache[event.blockNumber];
@@ -139,7 +141,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
                     amount = web3.utils.toBN(event.raw.data);
                 }
             }
-            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, receipientAddress, event.event, unixdate, humanDate, logData);
+            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixdate, humanDate, logData);
             rows.push(obj);
             bar.tick()
         }

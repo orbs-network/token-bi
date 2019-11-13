@@ -4,8 +4,8 @@ import {EventData} from 'web3-eth-contract';
  * Extract the 'sender' address from the given event.
  */
 export function getFromAddressAddressFromEvent(event: EventData) : string {
-    const TOPIC_FROM_ADDR = 1;
-    const senderTopic = event.raw.topics[TOPIC_FROM_ADDR];
+    const TOPIC_FROM_ADDR_INDEX = 1;
+    const senderTopic = event.raw.topics[TOPIC_FROM_ADDR_INDEX];
 
     return extractAddressFromRawHexValue(senderTopic);
 }
@@ -14,13 +14,14 @@ export function getFromAddressAddressFromEvent(event: EventData) : string {
  * Extract the 'receiver' address from the given event.
  */
 export function getToAddressAddressFromEvent(event: EventData) : string {
-    const TOPIC_TO_ADDR = 2;
-    const receiverTopic = event.raw.topics[TOPIC_TO_ADDR];
+    const TOPIC_TO_ADDR_INDEX = 2;
+    const receiverTopic = event.raw.topics[TOPIC_TO_ADDR_INDEX];
 
-    if (receiverTopic != null) {
+    if (receiverTopic === null) {
+        return null;
+    } else {
         return extractAddressFromRawHexValue(receiverTopic);
     }
-    return "NA";
 }
 
 /**
