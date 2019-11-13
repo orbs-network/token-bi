@@ -3,6 +3,8 @@ import { AbiItem } from 'web3-utils';
 import fs from "fs";
 import ProgressBar from "progress";
 
+import { EventData } from 'web3-eth-contract';
+
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
 let erc20ContractAddress = "0xff56Cc6b1E6dEd347aA0B7676C85AB0B3D08B0FA"; //token contract
@@ -61,13 +63,13 @@ function validateInput() {
     }
 }
 
-function getFromAddressAddressFromEvent(event) {
+function getFromAddressAddressFromEvent(event: EventData) {
     const TOPIC_FROM_ADDR = 1;
     const topic = event.raw.topics[TOPIC_FROM_ADDR];
     return '0x' + topic.substring(26);
 }
 
-function getToAddressAddressFromEvent(event) {
+function getToAddressAddressFromEvent(event: EventData) {
     const TOPIC_TO_ADDR = 2;
     const topic = event.raw.topics[TOPIC_TO_ADDR];
     if (topic != null) {
@@ -94,7 +96,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
     const blockCache = {}
     const rows = [];
     try {
-        const events = await contract.getPastEvents(eventName, options);
+        const events: EventData[] = await contract.getPastEvents(eventName, options);
         const green = '\u001b[42m \u001b[0m';
         const red = '\u001b[41m \u001b[0m';
         const bar = new ProgressBar(':bar \x1b[33m:percent :current/:total time spent: :elapseds done in: :etas\x1b[0m', {
