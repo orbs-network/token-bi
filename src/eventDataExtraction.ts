@@ -17,7 +17,7 @@ export function getToAddressAddressFromEvent(event: EventData) : string {
     const TOPIC_TO_ADDR_INDEX = 2;
     const receiverTopic = event.raw.topics[TOPIC_TO_ADDR_INDEX];
 
-    if (receiverTopic === null) {
+    if (receiverTopic === null || receiverTopic === undefined) {
         return null;
     } else {
         return extractAddressFromRawHexValue(receiverTopic);

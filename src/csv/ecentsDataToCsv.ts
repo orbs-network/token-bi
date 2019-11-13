@@ -9,9 +9,11 @@ export async function writeEventsDataToCsv(eventsData: any[], csvHeader: string,
         csvStr = csvHeader + ',HumanDate\n';
     }
 
+    const flagsForCsvFormatter = { addHumanReadableDate: withHumanDate };
+
     for (let i = 0;i < eventsData.length;i++) {
         const row = eventsData[i];
-        csvStr += appendFunc(row);
+        csvStr += appendFunc(row, flagsForCsvFormatter);
     }
 
     fs.writeFileSync(outputFilename, csvStr);
