@@ -1,5 +1,8 @@
 import fs from "fs";
 
+/**
+ * Creates the CSV file Content from the given eventsData + appendFunction and then writes the results to the file with the given name.
+ */
 export async function writeEventsDataToCsv(eventsData: any[], csvHeader: string, eventName, outputFilename: string, appendFunc, withHumanDate: boolean) {
     let csvStr = csvHeader + "\n";
     if (withHumanDate) {
