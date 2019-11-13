@@ -5,6 +5,13 @@ import ProgressBar from "progress";
 
 import { EventData, EventOptions } from 'web3-eth-contract';
 import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './src/eventDataExtraction';
+import {
+    formatDelegate,
+    formatGuardian,
+    formatTransfer,
+    formatVoteOut,
+    writeEventsDataToCsv
+} from './src/csv/ecentsDataToCsv';
 
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
@@ -61,16 +68,6 @@ function validateInput() {
 
     if (!filenameDelegates) {
         filenameDelegates = 'delegates.csv';
-    }
-}
-
-
-
-function generateRowObject(amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unixDate, humanDate, logData) {
-    return {
-        // NOTE : needs to manually check the return object property names
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
     }
 }
 
@@ -143,7 +140,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
             }
             const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixdate, humanDate, logData);
             rows.push(obj);
-            bar.tick()
+            bar.tick();
         }
         return rows;
     } catch (error) {
@@ -185,80 +182,58 @@ async function readAndMergeEvents(web3, contract, startBlock, endBlock, eventNam
     return events;
 }
 
-function getHumanDateForRow(row, delim) {
-    let humanDatePart = "";
-    if (withHumanDate) {
-        humanDatePart = `${delim}${row.human_date}`;
+function generateRowObject(amount: number, block: number,
+                           transactionIndex: number, txHash: string,
+                           transferFrom: string, transferTo: string,
+                           method: string,
+                           unixDate, humanDate: string, logData) {
+    return {
+        // NOTE : needs to manually check the return object property names
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
     }
-    return humanDatePart;
-}
-
-function formatDelegate(row) {
-    const humanDatePart = getHumanDateForRow(row, ",");
-    return `${row.transferFrom},${row.transferTo},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
-}
-
-function formatTransfer(row) {
-    const humanDatePart = getHumanDateForRow(row, ",");
-    return `${row.transferFrom},${row.transferTo},${row.amount},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
-}
-
-function formatGuardian(row) {
-const humanDatePart = getHumanDateForRow(row, ",");
-    return `${row.transferFrom},${row.transactionIndex},${row.txHash},${row.block},${row.unix_date}${humanDatePart}\n`;
-}
-
-function formatVoteOut(row) {
-const humanDatePart = getHumanDateForRow(row, ";");
-    return `${row.logData.counter.toString(10)};${row.transferFrom};${JSON.stringify(row.logData.validators)};${row.transactionIndex};${row.txHash};${row.block};${row.unix_date}${humanDatePart}\n`;
 }
 
 async function getEvents(web3, contract, eventName, csvHeader, appendFunc, outputFilename) {
     const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventName, false);
     console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
 
-    let csvStr = csvHeader + "\n";
-    if (withHumanDate) {
-        csvStr = csvHeader + ',HumanDate\n';
-    }
-
-    for (let i = 0;i < eventsData.length;i++) {
-        const row = eventsData[i];
-        csvStr += appendFunc(row);
-    }
-
-    fs.writeFileSync(outputFilename, csvStr);
-    console.log('\x1b[33m%s\x1b[0m', `${eventName} CSV version file was saved to ${outputFilename}!`);
+    await writeEventsDataToCsv(eventsData, csvHeader, eventName, outputFilename, appendFunc, withHumanDate);
 }
 
-async function main() {
+async function main(flags: { doTransfers: boolean, doDelegates: boolean, doGuardians: boolean, doVotes: boolean }) {
     validateInput();
 
     const web3 = await new Web3(new Web3.providers.HttpProvider(ethereumConnectionURL));
 
-    if (doTransfers) {
+    if (flags.doTransfers) {
         const tokenContract = await new web3.eth.Contract(TOKEN_ABI, erc20ContractAddress);
         await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, TRANSFERS_HEADER, formatTransfer, filenameTransfers);
     }
 
-    if (doDelegates) {
+    if (flags.doDelegates) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
         await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, DELEGATES_HEADER, formatDelegate, filenameDelegates);
     }
 
-    if (doGuardians) {
+    if (flags.doGuardians) {
         const guardianContract = await new web3.eth.Contract(GUARDIANS_ABI, guardiansContractAddress);
         await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, filenameGuardiansRegister);
         await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, GUARDIANS_HEADER, formatGuardian, filenameGuardiansLeave);
     }
 
-    if (doVotes) {
+    if (flags.doVotes) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
         await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, VOTEOUT_HEADER, formatVoteOut, filenameVoteOut);
     }
 }
 
-main()
+main({
+    doTransfers,
+    doDelegates,
+    doGuardians,
+    doVotes
+})
     .then(results => {
         console.log('\x1b[33m%s\x1b[0m', "\n\nDone!!\n");
     }).catch(console.error);
