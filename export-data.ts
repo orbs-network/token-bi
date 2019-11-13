@@ -77,15 +77,18 @@ function validateInput() {
 
 async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
     console.log('\x1b[33m%s\x1b[0m', `Reading from block ${startBlock} to block ${endBlock}`);
+
     const options: EventOptions = {
         fromBlock: startBlock,
         toBlock: endBlock
     };
 
-    const blockCache = {}
+    const blockCache = {};
     const rows = [];
+
     try {
         const events: EventData[] = await contract.getPastEvents(eventName, options);
+
         const green = '\u001b[42m \u001b[0m';
         const red = '\u001b[41m \u001b[0m';
         const bar = new ProgressBar(':bar \x1b[33m:percent :current/:total time spent: :elapseds done in: :etas\x1b[0m', {
@@ -146,6 +149,7 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
             rows.push(obj);
             bar.tick();
         }
+
         return rows;
     } catch (error) {
         if (error.message.includes("-32005")) {
