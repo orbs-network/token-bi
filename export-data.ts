@@ -1,7 +1,6 @@
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
-import fs from "fs";
-import ProgressBar from "progress";
+
 
 // Imports for types
 import { EventData, EventOptions, Contract } from 'web3-eth-contract';
@@ -14,14 +13,14 @@ import {
     formatVoteOut,
     writeEventsDataToCsv
 } from './src/csv/ecentsDataToCsv';
+import {getEvents} from './src/erc20Events/erc20Events';
 
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
 let erc20ContractAddress = "0xff56Cc6b1E6dEd347aA0B7676C85AB0B3D08B0FA"; //token contract
 const votingContractAddress = "0x30f855afb78758Aa4C2dc706fb0fA3A98c865d2d"; //voting
 const guardiansContractAddress = "0xD64B1BF6fCAb5ADD75041C89F61816c2B3d5E711"; //guardians - not used yet
-// let startBlock = 8408900; //transactions start at 7437000; //contract created at 5710114
-let startBlock = 8540900; //transactions start at 7437000; //contract created at 5710114
+let startBlock = 8408900; //transactions start at 7437000; //contract created at 5710114
 let endBlock = 8548900; // last elections as of now.. first election at 7528900
 const interval = 100000;
 const doTransfers = true;
@@ -73,154 +72,6 @@ function validateInput() {
     if (!filenameDelegates) {
         filenameDelegates = 'delegates.csv';
     }
-}
-
-async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
-    console.log('\x1b[33m%s\x1b[0m', `Reading from block ${startBlock} to block ${endBlock}`);
-
-    const options: EventOptions = {
-        fromBlock: startBlock,
-        toBlock: endBlock
-    };
-
-    const blockCache = {};
-    const rows = [];
-
-    try {
-        const events: EventData[] = await contract.getPastEvents(eventName, options);
-
-        const green = '\u001b[42m \u001b[0m';
-        const red = '\u001b[41m \u001b[0m';
-        const bar = new ProgressBar(':bar \x1b[33m:percent :current/:total time spent: :elapseds done in: :etas\x1b[0m', {
-              complete: green,
-              incomplete: red,
-              width: 80,
-              total: events.length });
-
-        for (let i = events.length-1; i >= 0;i--) {
-            const event = events[i];
-            if (requireSuccess) {
-                const curTxnReceipt = await web3.eth.getTransactionReceipt(event.transactionHash);
-                if (curTxnReceipt == null) {
-                    throw "Could not find a transaction for your id! ID you provided was " + event.transactionHash;
-                } else {
-                    if(curTxnReceipt.status == '0x0') {
-                        console.log("Transaction failed, event ignored txid: " + event.transactionHash);
-                        continue;
-                    }
-                }
-            }
-
-            // Extract 'source' and 'recipient' addresses
-            const sourceAddress = getFromAddressAddressFromEvent(event);
-            const recipientAddress = getToAddressAddressFromEvent(event) || 'NA';
-
-            // Get timestamp (with block cache)
-            let transactionBlock = blockCache[event.blockNumber];
-            if (transactionBlock == undefined) {
-                transactionBlock = await web3.eth.getBlock(event.blockNumber);
-                blockCache[event.blockNumber] = transactionBlock;
-            }
-            const unixdate = transactionBlock.timestamp;
-            const jsDate = new Date(unixdate*1000);
-            let humanDate = jsDate.toUTCString();
-            humanDate = humanDate.slice(0, 3) + humanDate.slice(4);
-            let amount = 0;
-            let logData = [];
-            if (event.raw.data != null) { // no data for guardians event
-                if (event.event === "VoteOut") {
-                    logData = web3.eth.abi.decodeLog([{
-                        type: 'address',
-                        name: 'sender',
-                        indexed: true
-                    },{
-                        type: 'address[]',
-                        name: 'validators'
-                    },{
-                        type: 'uint256',
-                        name: 'counter'
-                    }], event.raw.data, event.raw.topics[1]);
-
-                } else {
-                    amount = web3.utils.toBN(event.raw.data);
-                }
-            }
-            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixdate, humanDate, logData);
-            rows.push(obj);
-            bar.tick();
-        }
-
-        return rows;
-    } catch (error) {
-        if (error.message.includes("-32005")) {
-            const interval = endBlock - startBlock;
-            // try log execution
-            let halfInterval = Math.floor(interval / 2);
-            const startPlusHalf = startBlock+halfInterval;
-            const firstHalf = await getAllPastEvents(web3, contract, startBlock, startPlusHalf-1, eventName, requireSuccess);
-            if (startPlusHalf + halfInterval < endBlock) {
-                // handle odd integer division from a couple of lines back
-                halfInterval++;
-            }
-            const secondHalf = await getAllPastEvents(web3, contract, startPlusHalf, startPlusHalf+halfInterval, eventName, requireSuccess);
-            return firstHalf.concat(secondHalf);
-        } else {
-            console.log(error);
-            return [];
-        }
-    }
-}
-
-async function readAndMergeEvents(web3: Web3, contract: Contract,
-                                  startBlock: number, endBlock: number, eventBatchingSize: number,
-                                  eventName: string, requireSuccess: boolean) {
-    let events = [];
-    let curBlockInt = startBlock;
-    // const endBlockInt = endBlock;
-
-    while (curBlockInt < endBlock) {
-        // Calculate next starting block by the given interval step
-        let targetBlock = curBlockInt + eventBatchingSize - 1;
-
-        // Ensure we are not going over the 'end block'
-        targetBlock = Math.min(targetBlock, endBlock);
-
-        // Gets all of the events for the current start and end blocks
-        const eventsInterval = await getAllPastEvents(web3, contract, curBlockInt, targetBlock, eventName, requireSuccess);
-
-        console.log('\x1b[33m%s\x1b[0m', `Found ${eventsInterval.length} ${eventName} events of Contract Address ${contract.options.address} between blocks ${curBlockInt} , ${targetBlock}`);
-
-        // TODO : ORL : Understand whe we add the interval and not the '-1' (and also if we can calculate it once and not in two places)
-        curBlockInt += eventBatchingSize;
-
-        // Add the the total list of events
-        events = events.concat(eventsInterval);
-    }
-
-    console.log('\x1b[33m%s\x1b[0m', `Found total of ${events.length} ${eventName} events of Contract Address ${contract.options.address} between blocks ${startBlock} , ${endBlock}`);
-
-    return events;
-}
-
-function generateRowObject(amount: number, block: number,
-                           transactionIndex: number, txHash: string,
-                           transferFrom: string, transferTo: string,
-                           method: string,
-                           unixDate, humanDate: string, logData) {
-    return {
-        // NOTE : needs to manually check the return object property names
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
-    }
-}
-
-async function getEvents(web3: Web3, contract: Contract, eventName: string,
-                         startBlock: number, endBlock: number,  eventBatchingSize: number) : Promise<any[]> {
-    const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventBatchingSize, eventName, false);
-
-    console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
-
-    return eventsData;
 }
 
 async function main(startBlock: number, endBlock: number,  eventBatchingSize: number,
