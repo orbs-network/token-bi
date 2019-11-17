@@ -1,11 +1,6 @@
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 
-
-// Imports for types
-import { EventData, EventOptions, Contract } from 'web3-eth-contract';
-
-import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './src/eventDataExtraction';
 import {
     formatDelegate,
     formatGuardian,
@@ -14,6 +9,7 @@ import {
     writeEventsDataToCsv
 } from './src/csv/ecentsDataToCsv';
 import {getEvents} from './src/erc20Events/erc20Events';
+import { convertEventDataToCsvRowForm } from './src/orbsEvents/orbsEventConverter.js'
 
 //let ethereumConnectionURL = "http://ec2-18-222-114-71.us-east-2.compute.amazonaws.com:8545"; //orbs endpoint
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
@@ -83,7 +79,7 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
 
     if (executionFlags.doTransfers) {
         const tokenContract = await new web3.eth.Contract(TOKEN_ABI, erc20ContractAddress);
-        const transferEvents = await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, startBlock, endBlock, eventBatchingSize);
+        const transferEvents = await getEvents(web3, tokenContract, TRANSFER_EVENT_NAME, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
 
         await writeEventsDataToCsv(transferEvents, TRANSFERS_HEADER, TRANSFER_EVENT_NAME, filenameTransfers, formatTransfer, outputFlags.addHumanReadableDate);
     }
@@ -91,7 +87,7 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
     if (executionFlags.doDelegates) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
 
-        const delegatesEvents = await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, startBlock, endBlock, eventBatchingSize);
+        const delegatesEvents = await getEvents(web3, votingContract, DELEGATE_EVENT_NAME, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
         await writeEventsDataToCsv(delegatesEvents, DELEGATES_HEADER, DELEGATE_EVENT_NAME, filenameDelegates, formatDelegate, outputFlags.addHumanReadableDate);
     }
 
@@ -99,18 +95,18 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
         const guardianContract = await new web3.eth.Contract(GUARDIANS_ABI, guardiansContractAddress);
 
         // Guardians register
-        const guardianRegisterEvents = await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, startBlock, endBlock, eventBatchingSize);
+        const guardianRegisterEvents = await getEvents(web3, guardianContract, GUARDIAN_REGISTER_EVENT_NAME, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
         await writeEventsDataToCsv(guardianRegisterEvents, GUARDIANS_HEADER, GUARDIAN_REGISTER_EVENT_NAME, filenameGuardiansRegister, formatGuardian, outputFlags.addHumanReadableDate);
 
         // Guardians leave
-        const guardianLeaveEvents = await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, startBlock, endBlock, eventBatchingSize);
+        const guardianLeaveEvents = await getEvents(web3, guardianContract, GUARDIAN_LEAVE_EVENT_NAME, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
         await writeEventsDataToCsv(guardianLeaveEvents, GUARDIANS_HEADER, GUARDIAN_LEAVE_EVENT_NAME, filenameGuardiansLeave, formatGuardian, outputFlags.addHumanReadableDate);
     }
 
     if (executionFlags.doVotes) {
         const votingContract = await new web3.eth.Contract(VOTING_ABI, votingContractAddress);
 
-        const voteoutEvents = await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, startBlock, endBlock, eventBatchingSize);
+        const voteoutEvents = await getEvents(web3, votingContract, VOTEOUT_EVENT_NAME, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
         await writeEventsDataToCsv(voteoutEvents, VOTEOUT_HEADER, VOTEOUT_EVENT_NAME, filenameVoteOut, formatVoteOut, outputFlags.addHumanReadableDate);
     }
 }
