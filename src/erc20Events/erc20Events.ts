@@ -6,7 +6,7 @@ import perfy from 'perfy';
 // Imported for types
 import {Block} from 'web3-eth';
 
-import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from '../eventDataExtraction';
+import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './fieldsExtraction/eventFieldsExtraction';
 
 export async function getEvents(web3: Web3, contract: Contract, eventName: string,
                                 startBlock: number, endBlock: number,  eventBatchingSize: number) : Promise<any[]> {
