@@ -6,36 +6,40 @@ import perfy from 'perfy';
 // Imported for types
 import {Block} from 'web3-eth';
 
-import {getFromAddressAddressFromEvent, getToAddressAddressFromEvent} from './fieldsExtraction/eventFieldsExtraction';
+export type TEventConverterFunction<T extends {}> = (web3: Web3, event: EventData, eventTransactionBlock: Block) => T;
 
-export async function getEvents(web3: Web3, contract: Contract, eventName: string,
-                                startBlock: number, endBlock: number,  eventBatchingSize: number) : Promise<any[]> {
-    const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventBatchingSize, eventName, false);
+
+export async function getEvents<T = EventData>(web3: Web3, contract: Contract, eventName: string,
+                                               startBlock: number, endBlock: number,  eventBatchingSize: number,
+                                               eventConverter?: TEventConverterFunction<T>) : Promise<any[]> {
+    const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventBatchingSize, eventName, false, eventConverter);
 
     console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
 
     return eventsData;
 }
 
-async function readAndMergeEvents(web3: Web3, contract: Contract,
+async function readAndMergeEvents<T = EventData>(web3: Web3, contract: Contract,
                                   startBlock: number, endBlock: number, eventBatchingSize: number,
-                                  eventName: string, requireSuccess: boolean) {
+                                  eventName: string, requireSuccess: boolean,
+                                  eventConverter?: TEventConverterFunction<T>) {
     let events = [];
     let curBlockInt = startBlock;
 
     while (curBlockInt < endBlock) {
         // Calculate next starting block by the given interval step
+        // NOTE : O.L : We are reducing '1' because the block fetching is range-inclusive and we want to adhere to the
+        //              'eventBatchingSize'
         let targetBlock = curBlockInt + eventBatchingSize - 1;
 
         // Ensure we are not going over the 'end block'
         targetBlock = Math.min(targetBlock, endBlock);
 
         // Gets all of the events for the current start and end blocks
-        const eventsInterval = await getAllPastEvents(web3, contract, curBlockInt, targetBlock, eventName, requireSuccess);
+        const eventsInterval = await getAllPastEvents(web3, contract, curBlockInt, targetBlock, eventName, requireSuccess, eventConverter);
 
         console.log('\x1b[33m%s\x1b[0m', `Found ${eventsInterval.length} ${eventName} events of Contract Address ${contract.options.address} between blocks ${curBlockInt} , ${targetBlock}`);
 
-        // TODO : ORL : Understand whe we add the interval and not the '-1' (and also if we can calculate it once and not in two places)
         curBlockInt += eventBatchingSize;
 
         // Add the the total list of events
@@ -47,7 +51,10 @@ async function readAndMergeEvents(web3: Web3, contract: Contract,
     return events;
 }
 
-async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName, requireSuccess) {
+async function getAllPastEvents<T = EventData>(web3: Web3, contract: Contract,
+                                startBlock: number, endBlock: number,
+                                eventName: string, requireSuccess: boolean,
+                                eventConverter?: TEventConverterFunction<T>) {
     console.log('\x1b[33m%s\x1b[0m', `Reading from block ${startBlock} to block ${endBlock}`);
 
     const options: EventOptions = {
@@ -80,23 +87,19 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
 
         for (const event of events) {
 
-            // TODO : O.L : Check if we really need this part.
+            // NOTE : O.L : This was relevant before, now should consider removing it.
             // Is success-validation required ?
             if (requireSuccess) {
                 const curTxnReceipt = await web3.eth.getTransactionReceipt(event.transactionHash);
                 if (curTxnReceipt == null) {
                     throw "Could not find a transaction for your id! ID you provided was " + event.transactionHash;
                 } else {
-                    if(curTxnReceipt.status == '0x0') {
+                    if(curTxnReceipt.status === false) {
                         console.log("Transaction failed, event ignored txid: " + event.transactionHash);
                         continue;
                     }
                 }
             }
-
-            // Extract 'source' and 'recipient' addresses
-            const sourceAddress = getFromAddressAddressFromEvent(event);
-            const recipientAddress = getToAddressAddressFromEvent(event) || 'NA';
 
             // DEV_NOTE : The use of the cache saves us multiple 'getBlock' calls for events that
             // happened in the same block.
@@ -107,38 +110,13 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
 
             const transactionBlock = blockCache.get(event.blockNumber);
 
+            let eventToAdd : T | EventData = event;
 
-            const unixTimestamp = transactionBlock.timestamp;
-
-            // @ts-ignore (O.L: 'timestamp' can be string, will still result in proper multiplication)
-            const jsTimestamp = new Date(unixTimestamp * 1000);
-
-            let humanDate = jsTimestamp.toUTCString();
-            humanDate = humanDate.slice(0, 3) + humanDate.slice(4);
-
-            let amount = 0;
-            let logData = [];
-            if (event.raw.data != null) { // no data for guardians event
-                if (event.event === "VoteOut") {
-                    logData = web3.eth.abi.decodeLog([{
-                        type: 'address',
-                        name: 'sender',
-                        indexed: true
-                    },{
-                        type: 'address[]',
-                        name: 'validators'
-                    },{
-                        type: 'uint256',
-                        name: 'counter'
-                    }], event.raw.data, event.raw.topics[1]);
-
-                } else {
-                    amount = web3.utils.toBN(event.raw.data);
-                }
+            if (eventConverter) {
+                eventToAdd = eventConverter(web3, event, transactionBlock);
             }
-            const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixTimestamp, humanDate, logData);
 
-            rows.push(obj);
+            rows.push(eventToAdd);
             bar.tick();
         }
 
@@ -164,17 +142,5 @@ async function getAllPastEvents(web3, contract, startBlock, endBlock, eventName,
             console.log(error);
             return [];
         }
-    }
-}
-
-function generateRowObject(amount: number, block: number,
-                           transactionIndex: number, txHash: string,
-                           transferFrom: string, transferTo: string,
-                           method: string,
-                           unixDate, humanDate: string, logData) {
-    return {
-        // NOTE : needs to manually check the return object property names
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
     }
 }
