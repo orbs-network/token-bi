@@ -35,15 +35,16 @@ The database is denormalized, there are no relations between tables to simplify 
 
 `create.sql` holds all the tables in the system.
 
-| Name               | Description                                                      |
-|--------------------|------------------------------------------------------------------|
-| transfers          | Holds all ERC20 transfer events for ORBS token                   |
-| delegates          | The delegate events from the Orbs PoS Voting contract            |
-| known_addresses    | Helps track exchanges and other known entities                   |
-| guardians_register | Register events for guardians in the Orbs PoS Guardians contract |
-| guardians_leave    | Leave events for guardians in the Orbs PoS Guardians contract    |
-| guardians_votes    | Votes of guardians in the Orbs PoS Voting contract               |
-| validators         | The list of validators in the system                             |
+| Name                     | Description                                                      |
+|--------------------------|------------------------------------------------------------------|
+| transfers                | Holds all ERC20 transfer events for ORBS token                   |
+| delegates                | The delegate events from the Orbs PoS Voting contract            |
+| known_addresses          | Helps track exchanges and other known entities                   |
+| guardians_register       | Register events for guardians in the Orbs PoS Guardians contract |
+| guardians_leave          | Leave events for guardians in the Orbs PoS Guardians contract    |
+| guardians_votes          | Votes of guardians in the Orbs PoS Voting contract               |
+| validators               | The list of validators in the system                             |
+| precalc_valid_delegators | List of valid delegators for each election block (precalculated) |
 
 Once data has been imported, there are several views, functions and stored procedures available for working with the ethereum based data:
 
@@ -72,3 +73,4 @@ A Note about views, most of the views use a function called `BLOCKNUMBER()`, it 
 * `get_rewards_aggregate_in_range(start,end)` - will aggregate and get all of the reward data for the `start` election to `end` election, depends on the input number, it uses the function `get_elections_block` internally to set the block number for the different blocks
 * `sp_get_region(address, region)` - will return the region of the given address into the `region` parameter. This will query the different Orbs token transfer trail until an address with a known region is found. If the source is coming from an Exchange, the region will be 'From Exchange'
 * `sp_get_mld_value(source, last_own, total_delegate, guardian_address)` - will return the total multi level delegation (stake) for that guardian address. It will recurse starting at `source` to find out which guardian is eventually getting the delegation values. The purpose is to call this when we see delegation values on non-guardians, meaning that they are delegating to a guardian in a multi level delegation. `last_own` is used for tracking the value of the last delegator own delegation value in the recursion, and should be initiated with 0. It will be reduced from the total delegation when a guardian is found as its included in the regular calculation per guardian.
+* `sp_populate_delegators_for_next_election()` - this will precalculate the valid delegators for next election, due to the multi level and some weird behaviour in MySQL with this query, it is required to run it manually after each data import, so the reward calculation will be correct for the election data imported. For example, if importing 100k blocks from ethereum, run this five times. (as each 20k blocks an election happens)

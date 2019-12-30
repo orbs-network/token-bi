@@ -9,7 +9,7 @@ CREATE TABLE transfers (
 	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
 	KEY `ix_source` (`source`),
-    KEY `ix_recipient` (`recipient`)
+    KEY `ix_recipient` (`recipient`),
     KEY `ix_amount_source` (`amount`,`source`)
 )
 
@@ -83,4 +83,23 @@ CREATE TABLE validators(
 	PRIMARY KEY (id),
 	KEY `ix_address` (`address`),
 	KEY `ix_block` (`addedAtBlock`)
+)
+
+CREATE TABLE validators(
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	addedAtBlock  BIGINT NOT NULL,
+	validUntilBlock BIGINT,
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+	KEY `ix_block` (`addedAtBlock`)
+)
+
+CREATE TABLE precalc_valid_delegators(
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	address CHAR(42) NOT NULL,
+	block BIGINT,
+	PRIMARY KEY (id),
+	KEY `ix_address` (`address`),
+	KEY `ix_block` (`block`)
 )
