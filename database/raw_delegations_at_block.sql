@@ -3,6 +3,7 @@ SELECT
     known_name,
     address,
     in_orbs(MAX(delegated_stake)) AS total_delegated,
+    number_of_delegators,
     in_orbs(own_stake) AS own_stake,
     in_orbs(total_stake) AS total_stake,
     is_guardian,
@@ -12,6 +13,7 @@ FROM
         KNOWN(recipient) AS known_name,
             recipient AS address,
             delegated_stake,
+            number_of_delegators,
             own_stake,
             (delegated_stake + own_stake) total_stake,
             IS_GUARDIAN_AT_BLOCK(recipient, BLOCKNUMBER()) is_guardian
@@ -19,6 +21,7 @@ FROM
         (SELECT 
         recipient,
             SUM(stake) delegated_stake,
+            COUNT(stake) number_of_delegators,
             GET_STAKE_AT_BLOCK(recipient, BLOCKNUMBER()) own_stake
     FROM
         (SELECT 
@@ -118,6 +121,7 @@ FROM
         KNOWN(address) AS known_name,
             address AS address,
             0 AS delegated_stake,
+            0 AS number_of_delegators,
             GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS own_stake,
             GET_STAKE_AT_BLOCK(address, BLOCKNUMBER()) AS total_stake,
             1 AS is_guardian 
