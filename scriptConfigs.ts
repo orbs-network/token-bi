@@ -10,11 +10,11 @@ const processTransfers = true;
 const processDelegates = true;
 const processGuardians = true;
 const processVotes = true;
-const outputFilePathTransfers = "transfers.csv";
-const outputFilePathDelegates = "delegates.csv";
-const outputFilePathVoteOut = "votes.csv";
-const outputFilePathGuardiansRegister = "guardian_register.csv";
-const outputFilePathGuardiansLeave = "guardian_leave.csv";
+const outputFilePathTransfers = "outputs/transfers.csv";
+const outputFilePathDelegates = "outputs/delegates.csv";
+const outputFilePathVoteOut = "outputs/votes.csv";
+const outputFilePathGuardiansRegister = "outputs/guardian_register.csv";
+const outputFilePathGuardiansLeave = "outputs/guardian_leave.csv";
 const withHumanDate = false;
 
 export const configs = {

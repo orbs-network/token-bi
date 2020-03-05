@@ -1,8 +1,7 @@
 const Web3 = require('web3');
 const csv = require('fast-csv');
-var ProgressBar = require('progress');
+const ProgressBar = require('progress');
 const fs = require('fs');
-
 
 let ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
 let output_filename = "eth-balance.csv"; 
@@ -11,7 +10,7 @@ let block = 8468900;
 
 
 async function getBalanceFromEthereumAtBlock(web3, address, block) {
-	balance = web3.eth.getBalance(address, block);
+	const balance = web3.eth.getBalance(address, block);
 	return balance;
 }
 
@@ -31,7 +30,7 @@ async function processEthereum(allAddresses) {
 	for (let i = 0; i < allAddresses.length;i++) {
 		let address = allAddresses[i];
 		let balance = await getBalanceFromEthereumAtBlock(web3, address.toLowerCase(), block);
-		singleRow = `${address},${web3.utils.fromWei(balance)}\n`;
+		const singleRow = `${address},${web3.utils.fromWei(balance)}\n`;
 		csvStr += singleRow;
 		bar.tick();
 	}
