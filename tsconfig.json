@@ -5,6 +5,7 @@
     "sourceMap": false,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "esModuleInterop": true
   },
   "exclude": [
