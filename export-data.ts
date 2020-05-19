@@ -16,6 +16,8 @@ const { outputPaths, activationFlags, outputFlags, blocksReading } = configs;
 async function main(startBlock: number, endBlock: number,  eventBatchingSize: number,
                     executionFlags: { doTransfers: boolean, doDelegates: boolean, doGuardians: boolean, doVotes: boolean },
                     outputFlags: { addHumanReadableDate: boolean }) {
+    console.log(`Running for Ethereum blocks ${startBlock}-${endBlock}`);
+
     const web3 = await new Web3(new Web3.providers.HttpProvider(configs.ethereumConfigs.ethereumConnectionURL));
 
     if (executionFlags.doTransfers) {

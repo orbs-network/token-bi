@@ -3,8 +3,8 @@ import {ELECTION_BLOCKS} from './src/electionBlocks';
 
 const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965ca35a72fb6d68"; //infura endpoint
 
-let startBlock = ELECTION_BLOCKS['104'].ethereumBlockNumber + 1; //transactions start at 7437000; //contract created at 5710114
-let endBlock = ELECTION_BLOCKS['105'].ethereumBlockNumber; // last elections as of now.. first election at 7528900
+let startBlock = ELECTION_BLOCKS['107'].firstBlock; //transactions start at 7437000; //contract created at 5710114
+let endBlock = ELECTION_BLOCKS['110'].lastBlock; // last elections as of now.. first election at 7528900
 const blocksInterval = 200000;
 const processTransfers = true;
 const processDelegates = true;
