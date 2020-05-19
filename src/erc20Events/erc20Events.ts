@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import Web3 from 'web3';
 import {Contract, EventData, EventOptions} from 'web3-eth-contract';
 import ProgressBar from 'progress';
@@ -11,7 +12,7 @@ export type TEventConverterFunction<T extends {}> = (web3: Web3, event: EventDat
 
 export async function getEvents<T = EventData>(web3: Web3, contract: Contract, eventName: string,
                                                startBlock: number, endBlock: number,  eventBatchingSize: number,
-                                               eventConverter?: TEventConverterFunction<T>) : Promise<any[]> {
+                                               eventConverter?: TEventConverterFunction<T>): Promise<any[]> {
     const eventsData = await readAndMergeEvents(web3, contract, startBlock, endBlock, eventBatchingSize, eventName, false, eventConverter);
 
     console.log('\x1b[33m%s\x1b[0m', `Merged to ${eventsData.length} ${eventName} events`);
@@ -75,7 +76,7 @@ async function getAllPastEvents<T = EventData>(web3: Web3, contract: Contract,
         const events: EventData[] = await contract.getPastEvents(eventName, options);
 
         const getPastEventsPerf = perfy.end('getPastEvents');
-        console.log(`Got ${events.length} past events from ${endBlock - startBlock} blocks at ${getPastEventsPerf.time.toFixed(5)} ms`);
+        console.log(`Got ${events.length} past events from ${endBlock - startBlock + 1} blocks at ${getPastEventsPerf.time.toFixed(5)} ms`);
 
         const green = '\u001b[42m \u001b[0m';
         const red = '\u001b[41m \u001b[0m';
@@ -110,7 +111,7 @@ async function getAllPastEvents<T = EventData>(web3: Web3, contract: Contract,
 
             const transactionBlock = blockCache.get(event.blockNumber);
 
-            let eventToAdd : T | EventData = event;
+            let eventToAdd: T | EventData = event;
 
             if (eventConverter) {
                 eventToAdd = eventConverter(web3, event, transactionBlock);
