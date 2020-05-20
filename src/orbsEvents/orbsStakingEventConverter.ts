@@ -8,25 +8,47 @@ import {
     getToAddressAddressFromEvent
 } from '../fieldsExtraction/eventFieldsExtraction';
 import {Block} from 'web3-eth';
+import {ITypedEventData} from "../types/typesUtils";
 
-export interface IOrbsCSVRowObjectFromEvents {
-    amount: number| BN,
-    block: number,
-    transactionIndex: number,
-    txHash: string,
-    transferFrom: string,
-    transferTo: string,
-    method: string,
-    unix_date: number,
-    human_date: string,
-    logData
+/**
+ * DEV_NOTE : COPIED from 'orbs-pos-data'
+ * It just so happens that all of the staking related events have the same signature.
+ * DEV_NOTE : The real object will also have array accessors ("1", "2", "3") that match the named members.
+ * DEV_NOTE : Currently amounts are strings, in the future should change to bigint)
+ */
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+interface IStakingContractEventValues {
+    stakeOwner: string;
+    // TODO : O.L : Change this to bigint after web3 change
+    amount: string; // Amount for the event
+    // TODO : O.L : Change this to bigint after web3 change
+    totalStakedAmount: string; // Total staked amount for given owner
 }
 
-export const convertStakingEventDataToCsvRowForm: TEventConverterFunction<IOrbsCSVRowObjectFromEvents> = (web3: Web3, event: EventData, eventTransactionBlock: Block) => {
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IOrbsCSVRowObjectFromStakingEvents {
+    amount: number| BN;
+    block: number;
+    transactionIndex: number;
+    txHash: string;
+    transferFrom: string;
+    transferTo: string;
+    method: string;
+    unix_date: number;
+    human_date: string;
+    logData;
+}
+
+export const convertStakingEventDataToCsvRowForm: TEventConverterFunction<IOrbsCSVRowObjectFromStakingEvents> = (web3: Web3, event: ITypedEventData<IStakingContractEventValues>, eventTransactionBlock: Block) => {
     let amount: number | BN = 0;
     let logData = {};
 
-    // Extract 'source' and 'recipient' addresses
+    // Stake owner is the sender of the tx
+    const stakeOwnerAddress = event.returnValues.stakeOwner;
+    const eventAmount = event.returnValues.amount;
+    const totalStakedAmount = event.returnValues.totalStakedAmount;
+
+
     const sourceAddress = getFromAddressAddressFromEvent(event);
     const recipientAddress = getToAddressAddressFromEvent(event) || 'NA';
 
@@ -57,6 +79,7 @@ export const convertStakingEventDataToCsvRowForm: TEventConverterFunction<IOrbsC
             amount = web3.utils.toBN(event.raw.data);
         }
     }
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixTimestamp, humanDate, logData);
 
     return obj;
@@ -67,7 +90,7 @@ function generateRowObject(amount: number| BN, block: number,
                            transactionIndex: number, txHash: string,
                            transferFrom: string, transferTo: string,
                            method: string,
-                           unixDate: number, humanDate: string, logData) : IOrbsCSVRowObjectFromEvents{
+                           unixDate: number, humanDate: string, logData): IOrbsCSVRowObjectFromStakingEvents{
     return {
         // NOTE : needs to manually check the return object property names
         // eslint-disable-next-line @typescript-eslint/camelcase

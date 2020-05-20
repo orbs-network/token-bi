@@ -1,16 +1,19 @@
 import Web3 from 'web3';
 
 import {
-  formatDelegate,
-  formatGuardian,
-  formatTransfer,
-  formatVoteOut,
+
+   formatStaked,
+
+
   writeEventsDataToCsv
 } from './src/csv/ecentsDataToCsv';
 import {getEvents} from './src/erc20Events/erc20Events';
 import {ABIS, CONTRACTS, CSV_CONSTANTS, STAKING_EVENT_NAMES} from './scriptConstants';
 import {configs} from './scriptConfigs';
-import {convertStakingEventDataToCsvRowForm} from "./src/orbsEvents/orbsStakingEventConverter";
+import {
+  convertStakingEventDataToCsvRowForm,
+  IOrbsCSVRowObjectFromStakingEvents
+} from "./src/orbsEvents/orbsStakingEventConverter";
 const { outputPaths, activationFlags, outputFlags, blocksReading } = configs;
 
 async function main(startBlock: number, endBlock: number,  eventBatchingSize: number,
@@ -23,9 +26,9 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
   const stakingContract = await new web3.eth.Contract(ABIS.staking, CONTRACTS.stakingContractAddress);
 
   if (executionFlags.doStaked) {
-    const transferEvents = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.staked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
+    const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.staked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
 
-    await writeEventsDataToCsv(transferEvents, CSV_CONSTANTS.stakedHeader, STAKING_EVENT_NAMES.staked, outputPaths.transfers, formatTransfer, outputFlags.addHumanReadableDate);
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.stakedHeader, STAKING_EVENT_NAMES.staked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
   }
 
   // if (executionFlags.doDelegates) {
