@@ -103,3 +103,61 @@ CREATE TABLE precalc_valid_delegators(
 	KEY `ix_address` (`address`),
 	KEY `ix_block` (`block`)
 )
+
+-- All Staking events tables are of the same structure
+
+CREATE TABLE staked_events (
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	stakeOwner CHAR(42) NOT NULL,
+	eventAmount DECIMAL(29,0) NOT NULL,
+	totalAmount DECIMAL(29,0) NOT NULL,
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_stake_owner` (`stakeOwner`),
+    KEY `ix_amount_source` (`amount`,`source`)
+)
+
+CREATE TABLE unstaked_events (
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	stakeOwner CHAR(42) NOT NULL,
+	eventAmount DECIMAL(29,0) NOT NULL,
+	totalAmount DECIMAL(29,0) NOT NULL,
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_stake_owner` (`stakeOwner`),
+    KEY `ix_amount_source` (`amount`,`source`)
+)
+
+CREATE TABLE restaked_events (
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	stakeOwner CHAR(42) NOT NULL,
+	eventAmount DECIMAL(29,0) NOT NULL,
+	totalAmount DECIMAL(29,0) NOT NULL,
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_stake_owner` (`stakeOwner`),
+    KEY `ix_amount_source` (`amount`,`source`)
+)
+
+CREATE TABLE withdrew_events (
+	id BIGINT NOT NULL AUTO_INCREMENT,
+	stakeOwner CHAR(42) NOT NULL,
+	eventAmount DECIMAL(29,0) NOT NULL,
+	totalAmount DECIMAL(29,0) NOT NULL,
+	transactionIndex INT NOT NULL,
+	transactionHash CHAR(66) NOT NULL,
+	block BIGINT NOT NULL,
+	blockTime BIGINT NOT NULL,
+	PRIMARY KEY (id),
+	KEY `ix_stake_owner` (`stakeOwner`),
+    KEY `ix_amount_source` (`amount`,`source`)
+)
