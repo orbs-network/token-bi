@@ -13,11 +13,16 @@ const processTransfers = true;
 const processDelegates = true;
 const processGuardians = true;
 const processVotes = true;
+const processStaked = true;
+const processUntaked = true;
+const processRestaked = true;
+const processWithdrew = true;
 const outputFilePathTransfers = "outputs/transfers.csv";
 const outputFilePathDelegates = "outputs/delegates.csv";
 const outputFilePathVoteOut = "outputs/votes.csv";
 const outputFilePathGuardiansRegister = "outputs/guardian_register.csv";
 const outputFilePathGuardiansLeave = "outputs/guardian_leave.csv";
+const outputFilePathStaked = "outputs/staked.csv";
 const withHumanDate = false;
 
 export const configs = {
@@ -30,10 +35,17 @@ export const configs = {
         blocksInterval,
     },
     activationFlags: {
+        // Regular events
         processTransfers,
         processDelegates,
         processGuardians,
         processVotes,
+
+        // Staking contract events
+        processStaked,
+        processUntaked,
+        processRestaked,
+        processWithdrew,
     },
     outputPaths: {
         transfers: outputFilePathTransfers,
@@ -41,6 +53,9 @@ export const configs = {
         voteOut: outputFilePathVoteOut,
         guardiansRegister: outputFilePathGuardiansRegister,
         guardiansLeave: outputFilePathGuardiansLeave,
+
+        // Staking events
+        staked: outputFilePathStaked,
     },
     outputFlags: {
         withHumanDate,
