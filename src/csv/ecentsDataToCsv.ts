@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import fs from "fs";
 import {IOrbsCSVRowObjectFromStakingEvents} from "../orbsEvents/orbsStakingEventConverter";
+import BN from "bn.js";
 
 type FlagsForCsvFormatter = { addHumanReadableDate: boolean };
 
@@ -45,9 +46,20 @@ export function formatVoteOut(row, flags: FlagsForCsvFormatter) {
 }
 
 export function formatStaked(row: IOrbsCSVRowObjectFromStakingEvents, flags: FlagsForCsvFormatter) {
-    // TODO : ORL : Modify to our needs
     const humanDatePart = flags.addHumanReadableDate ? getHumanDateForRow(row, ";") : '';
-    return `${row.logData.counter.toString(10)};${row.transferFrom};${JSON.stringify(row.logData.validators)};${row.transactionIndex};${row.txHash};${row.block};${row.unix_date}${humanDatePart}\n`;
+
+    const fields: (string|number|BN)[] = [
+      row.method,
+      row.stakeOwner,
+      row.eventAmount,
+      row.totalAmount,
+      row.transactionIndex,
+      row.txHash,
+      row.block,
+      row.unix_date,
+      humanDatePart,
+    ];
+    return (fields.join(';') + '\n');
 }
 
 function getHumanDateForRow(row, delim) {

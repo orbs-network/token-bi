@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase,@typescript-eslint/no-use-before-define */
 // Imports for types
 import {EventData} from 'web3-eth-contract';
 import BN from 'bn.js';
@@ -27,30 +28,31 @@ interface IStakingContractEventValues {
 
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
 export interface IOrbsCSVRowObjectFromStakingEvents {
-    amount: number| BN;
-    block: number;
+    // Event data
+    stakeOwner: string;
+    eventAmount: BN;
+    totalAmount: BN;
+
+    // Event meta data
+    method: string;
+
+    // Transaction data
     transactionIndex: number;
     txHash: string;
-    transferFrom: string;
-    transferTo: string;
-    method: string;
+    block: number;
     unix_date: number;
     human_date: string;
-    logData;
 }
 
 export const convertStakingEventDataToCsvRowForm: TEventConverterFunction<IOrbsCSVRowObjectFromStakingEvents> = (web3: Web3, event: ITypedEventData<IStakingContractEventValues>, eventTransactionBlock: Block) => {
-    let amount: number | BN = 0;
-    let logData = {};
-
     // Stake owner is the sender of the tx
     const stakeOwnerAddress = event.returnValues.stakeOwner;
-    const eventAmount = event.returnValues.amount;
-    const totalStakedAmount = event.returnValues.totalStakedAmount;
+    const eventAmount = new BN(event.returnValues.amount);
+    const totalStakedAmount = new BN(event.returnValues.totalStakedAmount);
 
 
-    const sourceAddress = getFromAddressAddressFromEvent(event);
-    const recipientAddress = getToAddressAddressFromEvent(event) || 'NA';
+    // event data
+    const { blockNumber, transactionIndex, transactionHash, event: eventName } = event;
 
     // Ensure numeric timestamp
     const { timestamp } = eventTransactionBlock;
@@ -61,39 +63,38 @@ export const convertStakingEventDataToCsvRowForm: TEventConverterFunction<IOrbsC
     let humanDate = jsTimestamp.toUTCString();
     humanDate = humanDate.slice(0, 3) + humanDate.slice(4);
 
-    if (event.raw.data != null) { // no data for guardians event
-        if (event.event === "VoteOut") {
-            logData = web3.eth.abi.decodeLog([{
-                type: 'address',
-                name: 'sender',
-                indexed: true
-            },{
-                type: 'address[]',
-                name: 'validators'
-            },{
-                type: 'uint256',
-                name: 'counter'
-            }], event.raw.data, [event.raw.topics[1]]);
-
-        } else {
-            amount = web3.utils.toBN(event.raw.data);
-        }
-    }
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixTimestamp, humanDate, logData);
+    // const obj = generateRowObject(amount,event.blockNumber, event.transactionIndex, event.transactionHash, sourceAddress, recipientAddress, event.event, unixTimestamp, humanDate, logData);
+    const obj = generateRowObject(stakeOwnerAddress, eventAmount, totalStakedAmount, blockNumber, transactionIndex, transactionHash, eventName, unixTimestamp, humanDate);
 
     return obj;
 };
 
 
-function generateRowObject(amount: number| BN, block: number,
+function generateRowObject(stakeOwner: string,
+                           eventAmount: BN,
+                           totalAmount: BN,
+                           block: number,
                            transactionIndex: number, txHash: string,
-                           transferFrom: string, transferTo: string,
                            method: string,
-                           unixDate: number, humanDate: string, logData): IOrbsCSVRowObjectFromStakingEvents{
-    return {
-        // NOTE : needs to manually check the return object property names
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
-    }
+                           unixDate: number, humanDate: string): IOrbsCSVRowObjectFromStakingEvents{
+    const csvRowForStakingEvent: IOrbsCSVRowObjectFromStakingEvents = {
+        stakeOwner,
+        eventAmount,
+        totalAmount,
+        method,
+        transactionIndex,
+        txHash,
+        block,
+        unix_date: unixDate,
+        human_date: humanDate,
+    };
+
+    return csvRowForStakingEvent;
+
+    // return {
+    //     // NOTE : needs to manually check the return object property names
+    //     // eslint-disable-next-line @typescript-eslint/camelcase
+    //     amount, block, transactionIndex, txHash, transferFrom, transferTo, method, unix_date: unixDate, human_date: humanDate, logData
+    // }
 }
