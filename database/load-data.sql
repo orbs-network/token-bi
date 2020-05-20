@@ -46,3 +46,31 @@ FIELDS TERMINATED BY ';'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (counter,address,validators,transactionIndex,transactionHash,block,blockTime);
+
+LOAD DATA FROM S3 's3://import-rds/uploads/9628901-9688900/staked-9628901-9688900.csv'
+INTO TABLE staked_events
+FIELDS TERMINATED BY ';'
+LINE TERMINATED BY '\n'
+IGNORE 1 ROWS
+(stakeOwner, eventAmount, totalAmount, transactionIndex, transactionHash, block, blockTime)
+
+LOAD DATA FROM S3 's3://import-rds/uploads/9628901-9688900/unstaked-9628901-9688900.csv'
+INTO TABLE unstaked_events
+FIELDS TERMINATED BY ';'
+LINE TERMINATED BY '\n'
+IGNORE 1 ROWS
+(stakeOwner, eventAmount, totalAmount, transactionIndex, transactionHash, block, blockTime)
+
+LOAD DATA FROM S3 's3://import-rds/uploads/9628901-9688900/restaked-9628901-9688900.csv'
+INTO TABLE restaked_events
+FIELDS TERMINATED BY ';'
+LINE TERMINATED BY '\n'
+IGNORE 1 ROWS
+(stakeOwner, eventAmount, totalAmount, transactionIndex, transactionHash, block, blockTime)
+
+LOAD DATA FROM S3 's3://import-rds/uploads/9628901-9688900/withdrew-9628901-9688900.csv'
+INTO TABLE withdrew_events
+FIELDS TERMINATED BY ';'
+LINE TERMINATED BY '\n'
+IGNORE 1 ROWS
+(stakeOwner, eventAmount, totalAmount, transactionIndex, transactionHash, block, blockTime)
