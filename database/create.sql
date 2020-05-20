@@ -117,7 +117,8 @@ CREATE TABLE staked_events (
 	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
 	KEY `ix_stake_owner` (`stakeOwner`),
-    KEY `ix_amount_source` (`amount`,`source`)
+	KEY `ix_amount_stake_owner` (`eventAmount`,`stakeOwner`),
+	KEY `ix_total_amount_stake_owner` (`totalAmount`,`stakeOwner`)
 )
 
 CREATE TABLE unstaked_events (
@@ -131,8 +132,8 @@ CREATE TABLE unstaked_events (
 	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
 	KEY `ix_stake_owner` (`stakeOwner`),
-    KEY `ix_amount_source` (`amount`,`source`)
-)
+	KEY `ix_amount_stake_owner` (`eventAmount`,`stakeOwner`),
+	KEY `ix_total_amount_stake_owner` (`totalAmount`,`stakeOwner`)
 
 CREATE TABLE restaked_events (
 	id BIGINT NOT NULL AUTO_INCREMENT,
@@ -144,8 +145,8 @@ CREATE TABLE restaked_events (
 	block BIGINT NOT NULL,
 	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
-	KEY `ix_stake_owner` (`stakeOwner`),
-    KEY `ix_amount_source` (`amount`,`source`)
+	KEY `ix_amount_stake_owner` (`eventAmount`,`stakeOwner`),
+	KEY `ix_total_amount_stake_owner` (`totalAmount`,`stakeOwner`)
 )
 
 CREATE TABLE withdrew_events (
@@ -158,6 +159,6 @@ CREATE TABLE withdrew_events (
 	block BIGINT NOT NULL,
 	blockTime BIGINT NOT NULL,
 	PRIMARY KEY (id),
-	KEY `ix_stake_owner` (`stakeOwner`),
-    KEY `ix_amount_source` (`amount`,`source`)
+	KEY `ix_amount_stake_owner` (`eventAmount`,`stakeOwner`),
+	KEY `ix_total_amount_stake_owner` (`totalAmount`,`stakeOwner`)
 )
