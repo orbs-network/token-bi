@@ -31,31 +31,23 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
     await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.stakedHeader, STAKING_EVENT_NAMES.staked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
   }
 
-  // if (executionFlags.doDelegates) {
-  //   const votingContract = await new web3.eth.Contract(ABIS.voting, CONTRACTS.votingContractAddress);
-  //
-  //   const delegatesEvents = await getEvents(web3, votingContract, EVENT_NAMES.delegate, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
-  //   await writeEventsDataToCsv(delegatesEvents, CSV_CONSTANTS.delegatesHeader, EVENT_NAMES.delegate, outputPaths.delegates, formatDelegate, outputFlags.addHumanReadableDate);
-  // }
-  //
-  // if (executionFlags.doGuardians) {
-  //   const guardianContract = await new web3.eth.Contract(ABIS.guardians, CONTRACTS.guardiansContractAddress);
-  //
-  //   // Guardians register
-  //   const guardianRegisterEvents = await getEvents(web3, guardianContract, EVENT_NAMES.guardianRegister, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
-  //   await writeEventsDataToCsv(guardianRegisterEvents, CSV_CONSTANTS.guardiansHeader, EVENT_NAMES.guardianRegister, outputPaths.guardiansRegister, formatGuardian, outputFlags.addHumanReadableDate);
-  //
-  //   // Guardians leave
-  //   const guardianLeaveEvents = await getEvents(web3, guardianContract, EVENT_NAMES.guardianLeave, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
-  //   await writeEventsDataToCsv(guardianLeaveEvents, CSV_CONSTANTS.guardiansHeader, EVENT_NAMES.guardianLeave, outputPaths.guardiansLeave, formatGuardian, outputFlags.addHumanReadableDate);
-  // }
-  //
-  // if (executionFlags.doVotes) {
-  //   const votingContract = await new web3.eth.Contract(ABIS.voting, CONTRACTS.votingContractAddress);
-  //
-  //   const voteoutEvents = await getEvents(web3, votingContract, EVENT_NAMES.voteOut, startBlock, endBlock, eventBatchingSize, convertEventDataToCsvRowForm);
-  //   await writeEventsDataToCsv(voteoutEvents, CSV_CONSTANTS.voteOutHeader, EVENT_NAMES.voteOut, outputPaths.voteOut, formatVoteOut, outputFlags.addHumanReadableDate);
-  // }
+  if (executionFlags.doUnstaked) {
+    const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.unstaked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
+
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.unstakedHeader, STAKING_EVENT_NAMES.unstaked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+  }
+
+  if (executionFlags.doRestaked) {
+    const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.restaked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
+
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.restakedHeader, STAKING_EVENT_NAMES.restaked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+  }
+
+  if (executionFlags.doWithdrew) {
+    const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.withdrew, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
+
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.withdrewHeader, STAKING_EVENT_NAMES.withdrew, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+  }
 }
 
 main(blocksReading.startBlock, blocksReading.endBlock, blocksReading.blocksInterval,

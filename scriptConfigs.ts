@@ -26,6 +26,9 @@ const outputFilePathVoteOut = "outputs/votes.csv";
 const outputFilePathGuardiansRegister = "outputs/guardian_register.csv";
 const outputFilePathGuardiansLeave = "outputs/guardian_leave.csv";
 const outputFilePathStaked = "outputs/staked.csv";
+const outputFilePathUnstaked = "outputs/unstaked.csv";
+const outputFilePathRestaked = "outputs/restaked.csv";
+const outputFilePathWithdrew = "outputs/withdrew.csv";
 const withHumanDate = false;
 
 export const configs = {
@@ -59,6 +62,9 @@ export const configs = {
 
         // Staking events
         staked: outputFilePathStaked,
+        unstaked: outputFilePathUnstaked,
+        restaked: outputFilePathRestaked,
+        withdrew: outputFilePathWithdrew,
     },
     outputFlags: {
         withHumanDate,

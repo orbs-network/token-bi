@@ -5,6 +5,9 @@ const DELEGATES_HEADER = "From,To,txnIndex,txnHash,Block,UnixDate";
 const GUARDIANS_HEADER = "Address,txnIndex,txnHash,Block,UnixDate";
 const VOTEOUT_HEADER = "Counter,Address,Validators,txnIndex,txnHash,Block,UnixDate";
 const STAKED_HEADER = "Method, StakeOwner,eventAmount,totalAmount,txnIndex,txnHash,Block,UnixDate";
+const UNSTAKED_HEADER = "Method, StakeOwner,eventAmount,totalAmount,txnIndex,txnHash,Block,UnixDate";
+const RESTAKED_HEADER = "Method, StakeOwner,eventAmount,totalAmount,txnIndex,txnHash,Block,UnixDate";
+const WITHDREW_HEADER = "Method, StakeOwner,eventAmount,totalAmount,txnIndex,txnHash,Block,UnixDate";
 
 const TRANSFER_EVENT_NAME = "Transfer";
 const DELEGATE_EVENT_NAME = "Delegate";
@@ -28,6 +31,10 @@ export const CSV_CONSTANTS = {
     guardiansHeader: GUARDIANS_HEADER,
     voteOutHeader: VOTEOUT_HEADER,
     stakedHeader: STAKED_HEADER,
+    unstakedHeader: UNSTAKED_HEADER,
+    restakedHeader: RESTAKED_HEADER,
+    withdrewHeader: WITHDREW_HEADER,
+
 };
 
 export const EVENT_NAMES = {
