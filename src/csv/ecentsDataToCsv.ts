@@ -49,7 +49,7 @@ export function formatStaked(row: IOrbsCSVRowObjectFromStakingEvents, flags: Fla
     const humanDatePart = flags.addHumanReadableDate ? getHumanDateForRow(row, ";") : '';
 
     const fields: (string|number|BN)[] = [
-      row.method,
+      // row.method, // No need for 'method' as we are using separated tables
       row.stakeOwner,
       row.eventAmount,
       row.totalAmount,

@@ -34,19 +34,19 @@ async function main(startBlock: number, endBlock: number,  eventBatchingSize: nu
   if (executionFlags.doUnstaked) {
     const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.unstaked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
 
-    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.unstakedHeader, STAKING_EVENT_NAMES.unstaked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.unstakedHeader, STAKING_EVENT_NAMES.unstaked, outputPaths.unstaked, formatStaked, outputFlags.addHumanReadableDate);
   }
 
   if (executionFlags.doRestaked) {
     const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.restaked, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
 
-    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.restakedHeader, STAKING_EVENT_NAMES.restaked, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.restakedHeader, STAKING_EVENT_NAMES.restaked, outputPaths.restaked, formatStaked, outputFlags.addHumanReadableDate);
   }
 
   if (executionFlags.doWithdrew) {
     const transferEvents: IOrbsCSVRowObjectFromStakingEvents[] = await getEvents(web3, stakingContract, STAKING_EVENT_NAMES.withdrew, startBlock, endBlock, eventBatchingSize, convertStakingEventDataToCsvRowForm);
 
-    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.withdrewHeader, STAKING_EVENT_NAMES.withdrew, outputPaths.staked, formatStaked, outputFlags.addHumanReadableDate);
+    await writeEventsDataToCsv<IOrbsCSVRowObjectFromStakingEvents>(transferEvents, CSV_CONSTANTS.withdrewHeader, STAKING_EVENT_NAMES.withdrew, outputPaths.withdrew, formatStaked, outputFlags.addHumanReadableDate);
   }
 }
 
