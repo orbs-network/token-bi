@@ -1,25 +1,23 @@
-USE `orbs_token`;
-DROP function IF EXISTS `get_stake`;
+-- Calculates the total stake (contract and balance tokens) of the given address
 
-DELIMITER $$
-USE `orbs_token`$$
-CREATE DEFINER=`orbs`@`%` FUNCTION `get_stake`(address CHAR(42)) RETURNS decimal(29,0)
+create
+    definer = orbs@`%` function get_stake(address char(42)) returns decimal(29)
 BEGIN
 DECLARE stake DECIMAL(29,0) DEFAULT 0;
 
 IF address = "0x0000000000000000000000000000000000000000" THEN
     SELECT 0 INTO stake;
 ELSE
-    SELECT 
-        r.received - s.sent
+    SELECT
+        (r.received - s.sent) + get_contract_stake(address)
     INTO stake FROM
-        (SELECT 
+        (SELECT
             COALESCE(SUM(amount), 0) sent
         FROM
             transfers
         WHERE
             source = address) s,
-        (SELECT 
+        (SELECT
             COALESCE(SUM(amount), 0) received
         FROM
             transfers
@@ -27,7 +25,5 @@ ELSE
             recipient = address) r;
 END IF;
 RETURN stake;
-END$$
-
-DELIMITER ;
+END;
 
