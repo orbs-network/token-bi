@@ -31,4 +31,4 @@ function generateBlocks(upUntilElection: number) {
   fs.writeFileSync('./src/electionBlocks.json', JSON.stringify(ELECTIONS, null, 2));
 }
 
-generateBlocks(150);
+generateBlocks(190);
