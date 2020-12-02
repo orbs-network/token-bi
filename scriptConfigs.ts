@@ -9,8 +9,12 @@ const ethereumConnectionURL = "https://mainnet.infura.io/v3/6e3487b19a364da6965c
 
 // let startBlock = ELECTION_BLOCKS['107'].firstBlock; //transactions start at 7437000; //contract created at 5710114
 // let endBlock = ELECTION_BLOCKS['110'].lastBlock; // last elections as of now.. first election at 7528900
-const startBlock = ELECTION_BLOCKS_JSON["142"].firstBlock; //transactions start at 7437000; //contract created at 5710114
-const endBlock = ELECTION_BLOCKS_JSON["142"].lastBlock; // last elections as of now.. first election at 7528900
+
+// DEV_NOTE : O.L : Staking contract was deployed at block 9831680 (election 117)
+// https://etherscan.io/tx/0x989848c4d6ea0f66120fcba4b95b69e35b3a660250ed68f80f19acb740a1d98f
+
+const startBlock = ELECTION_BLOCKS_JSON["171"].firstBlock; //transactions start at 7437000; //contract created at 5710114
+const endBlock = ELECTION_BLOCKS_JSON["193"].lastBlock; // last elections as of now.. first election at 7528900
 const blocksInterval = 200000;
 const processTransfers = true;
 const processDelegates = true;

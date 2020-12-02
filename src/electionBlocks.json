@@ -346,5 +346,17 @@
   "190": {
     "firstBlock": 11288901,
     "lastBlock": 11308900
+  },
+  "191": {
+    "firstBlock": 11308901,
+    "lastBlock": 11328900
+  },
+  "192": {
+    "firstBlock": 11328901,
+    "lastBlock": 11348900
+  },
+  "193": {
+    "firstBlock": 11348901,
+    "lastBlock": 11368900
   }
 }
