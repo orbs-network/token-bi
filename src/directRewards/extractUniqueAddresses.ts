@@ -1,7 +1,9 @@
 import fs from 'fs';
 const parse = require('csv-parse/lib/sync')
 
-const FILE_NAME = './staked_117_171.csv'
+
+// const FILE_NAME = './staked_117_171.csv'
+const FILE_NAME = "../../outputs/only_staked_events/117-193/staked_117_193.csv";
 const STAKER_ADDRESS_INDEX = 0;
 
 async function main() {
